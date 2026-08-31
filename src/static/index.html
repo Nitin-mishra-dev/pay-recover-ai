@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayRecover AI — Operator Decision Room & Proof Workstation</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome / Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              900: '#14532d',
+            },
+            razor: {
+              500: '#0c2340',
+              600: '#061324',
+              accent: '#3395ff'
+            },
+            dark: {
+              bg: '#090d16',
+              card: '#0f172a',
+              border: '#1e293b',
+              subtle: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+    code, pre, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-dark-bg text-slate-100 flex h-screen overflow-hidden antialiased">
+
+  <!-- Left Sidebar Navigation -->
+  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between shrink-0 select-none">
+    <div>
+      <!-- Brand Logo Header -->
+      <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20">
+          PR
+        </div>
+        <div>
+          <h1 class="font-bold text-sm leading-tight text-white tracking-wide">PayRecover <span class="text-emerald-400 font-mono text-xs">AI</span></h1>
+          <p class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Decision Room v0.1</p>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-3 space-y-1">
+        <button onclick="switchTab('overview')" id="nav-overview" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-400"></i>
+          <span>Overview</span>
+        </button>
+        <button onclick="switchTab('queue')" id="nav-queue" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="list-ordered" class="w-4 h-4 text-slate-400"></i>
+          <span>Recovery Queue</span>
+          <span id="badge-queue-count" class="ml-auto bg-slate-800 text-emerald-400 text-[10px] px-1.5 py-0.5 rounded font-mono">0</span>
+        </button>
+        <button onclick="switchTab('decision')" id="nav-decision" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="brain-circuit" class="w-4 h-4 text-emerald-400"></i>
+          <span>Decision Room</span>
+          <span class="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        </button>
+        <button onclick="switchTab('benchmark')" id="nav-benchmark" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-slate-400"></i>
+          <span>Benchmark Proof</span>
+        </button>
+        <button onclick="switchTab('failure-lab')" id="nav-failure-lab" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="flask-conical" class="w-4 h-4 text-amber-400"></i>
+          <span>Failure Lab</span>
+        </button>
+        <button onclick="switchTab('audit')" id="nav-audit" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
+          <span>Audit Ledger</span>
+        </button>
+        <button onclick="switchTab('safety')" id="nav-safety" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-900 transition-all">
+          <i data-lucide="sliders" class="w-4 h-4 text-slate-400"></i>
+          <span>Safety Controls</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Status & System Health -->
+    <div class="p-4 border-t border-slate-800 space-y-3 bg-slate-950/50">
+      <div class="flex items-center justify-between text-xs font-mono">
+        <span class="text-slate-400">Kill Switch:</span>
+        <span id="sidebar-killswitch-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">NORMAL</span>
+      </div>
+      <div class="flex items-center justify-between text-xs font-mono">
+        <span class="text-slate-400">Unsafe Executions:</span>
+        <span id="sidebar-unsafe-count" class="text-emerald-400 font-bold">0</span>
+      </div>
+      <button onclick="triggerResetDemo()" class="w-full text-xs font-mono py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition flex items-center justify-center gap-1.5">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Reset Demo State
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col overflow-hidden bg-slate-900/60">
+
+    <!-- Top Header Bar -->
+    <header class="h-16 border-b border-slate-800 px-8 flex items-center justify-between bg-slate-950/40 shrink-0">
+      <div class="flex items-center gap-4">
+        <h2 id="top-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span>Overview</span>
+        </h2>
+        <span id="top-tagline" class="text-xs text-slate-400 border-l border-slate-700 pl-4">Adaptive Post-Failure Revenue Recovery Engine</span>
+      </div>
+      <div class="flex items-center gap-3 font-mono text-xs">
+        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span class="text-slate-300">FastAPI Daemon: <strong class="text-emerald-400">ACTIVE</strong></span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+          <i data-lucide="shield" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span class="text-slate-300">SafetyKernel: <strong class="text-blue-400">8-STAGE LOCKED</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scrollable Screen Container -->
+    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+
+      <!-- SCREEN 1: OVERVIEW -->
+      <section id="screen-overview" class="screen-view space-y-6">
+        <!-- Top KPI Cards -->
+        <div class="grid grid-cols-5 gap-4">
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+            <div class="text-xs text-slate-400 font-mono">TOTAL REVENUE AT RISK</div>
+            <div id="stat-at-risk" class="text-2xl font-black text-white mt-1">₹12,450,000</div>
+            <div class="text-[10px] text-slate-500 mt-2 font-mono">10,000 holdout transactions</div>
+            <div class="absolute right-3 top-3 text-slate-800"><i data-lucide="alert-circle" class="w-8 h-8"></i></div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+            <div class="text-xs text-slate-400 font-mono">PAYRECOVER REVENUE</div>
+            <div id="stat-recovered" class="text-2xl font-black text-emerald-400 mt-1">₹2,195,274</div>
+            <div class="text-[10px] text-emerald-500/80 mt-2 font-mono">51.62% gross recovery rate</div>
+            <div class="absolute right-3 top-3 text-emerald-950"><i data-lucide="trending-up" class="w-8 h-8"></i></div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden border-emerald-500/30">
+            <div class="text-xs text-emerald-400 font-mono font-bold">NET INCREMENTAL VALUE (NIV)</div>
+            <div id="stat-niv" class="text-2xl font-black text-emerald-300 mt-1">₹1,934,406</div>
+            <div class="text-[10px] text-emerald-400 mt-2 font-mono font-bold">+8.92% vs Static Rules</div>
+            <div class="absolute right-3 top-3 text-emerald-900/40"><i data-lucide="zap" class="w-8 h-8"></i></div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+            <div class="text-xs text-slate-400 font-mono">POLICY EFFICIENCY</div>
+            <div id="stat-efficiency" class="text-2xl font-black text-blue-400 mt-1">55.53%</div>
+            <div class="text-[10px] text-slate-500 mt-2 font-mono">of Oracle Theoretical Ceiling</div>
+            <div class="absolute right-3 top-3 text-blue-950"><i data-lucide="gauge" class="w-8 h-8"></i></div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+            <div class="text-xs text-slate-400 font-mono">UNSAFE EXECUTIONS</div>
+            <div id="stat-unsafe" class="text-2xl font-black text-emerald-400 mt-1">0</div>
+            <div class="text-[10px] text-slate-500 mt-2 font-mono">Strict 0 Double Charges</div>
+            <div class="absolute right-3 top-3 text-slate-800"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
+          </div>
+        </div>
+
+        <!-- Quick Architecture & Demo CTA -->
+        <div class="grid grid-cols-3 gap-6">
+          <div class="col-span-2 bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+                <span>Authoritative 8-Stage Recovery Pipeline</span>
+              </h3>
+              <span class="text-xs font-mono text-slate-400">Deterministic Authority</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2 font-mono text-[11px]">
+              <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+                <div class="text-slate-500 text-[9px]">STAGE 1-2</div>
+                <div class="text-white font-bold mt-1">Schema & Bounds</div>
+                <div class="text-slate-400 text-[10px] mt-1">Strict JSON validator</div>
+              </div>
+              <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+                <div class="text-slate-500 text-[9px]">STAGE 3-4</div>
+                <div class="text-white font-bold mt-1">Policy & Ceilings</div>
+                <div class="text-slate-400 text-[10px] mt-1">Cooldowns & Max Retries</div>
+              </div>
+              <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+                <div class="text-slate-500 text-[9px]">STAGE 5-6</div>
+                <div class="text-white font-bold mt-1">Freshness & Locks</div>
+                <div class="text-slate-400 text-[10px] mt-1">Push-Cancel & Idempotency</div>
+              </div>
+              <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg border-emerald-500/30">
+                <div class="text-emerald-500 text-[9px]">STAGE 7-8</div>
+                <div class="text-white font-bold mt-1">Kill Switch & Exec</div>
+                <div class="text-emerald-400 text-[10px] mt-1">Authorized Dispatch</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+              <button onclick="switchTab('decision')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-lg shadow-emerald-600/20 flex items-center gap-2">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i> Open Decision Room
+              </button>
+              <button onclick="switchTab('failure-lab')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-2">
+                <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-400"></i> Open Failure Lab
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Payment Rail Status -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i>
+              <span>Payment Rail Health Sentinel</span>
+            </h3>
+            <div class="space-y-3 font-mono text-xs">
+              <div class="flex items-center justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                <span class="text-slate-300">HDFC Card Gateway</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PRISTINE (98%)</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                <span class="text-slate-300">NPCI UPI Switch</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">NORMAL (94%)</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                <span class="text-slate-300">ICICI Netbanking</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">NORMAL (91%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: RECOVERY QUEUE -->
+      <section id="screen-queue" class="screen-view hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white">Live Payment Failure Queue</h3>
+            <p class="text-xs text-slate-400">Real-time webhook ingestion stream with automated IEV ranking</p>
+          </div>
+          <button onclick="loadQueue()" class="text-xs font-mono px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Queue
+          </button>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900 text-slate-400 text-[11px] uppercase border-b border-slate-800">
+              <tr>
+                <th class="p-4">Payment ID / Order</th>
+                <th class="p-4">Amount</th>
+                <th class="p-4">Decline Reason</th>
+                <th class="p-4">State</th>
+                <th class="p-4">Recoverability</th>
+                <th class="p-4">Recommended Action</th>
+                <th class="p-4">Expected IEV</th>
+                <th class="p-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="queue-table-body" class="divide-y divide-slate-800/60">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: DECISION ROOM (HERO SCREEN) -->
+      <section id="screen-decision" class="screen-view hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="brain-circuit" class="w-5 h-5 text-emerald-400"></i>
+              <span>Payment Decision Room</span>
+            </h3>
+            <p class="text-xs text-slate-400">Counterfactual intervention selection under merchant policy and safety constraints</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <select id="decision-case-selector" onchange="loadCaseDetails(this.value)" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs font-mono px-3 py-1.5 rounded-lg focus:outline-none focus:border-emerald-500">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Hero Grid: Case Details & Candidate Comparison -->
+        <div class="grid grid-cols-3 gap-6">
+
+          <!-- Left Column: Case Information & Context -->
+          <div class="space-y-4">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 font-mono text-xs">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">Payment Context</div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Payment ID:</span>
+                <span id="dec-payment-id" class="text-white font-bold">pay_demo_01</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Order Amount:</span>
+                <span id="dec-amount" class="text-emerald-400 text-sm font-black">₹7,499.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Method:</span>
+                <span id="dec-method" class="text-slate-200 uppercase">CARD (HDFC)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Current State:</span>
+                <span id="dec-state" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">DECISION_READY</span>
+              </div>
+              <div class="pt-2 border-t border-slate-800">
+                <span class="text-slate-500 text-[10px]">Failure Code:</span>
+                <div id="dec-failure-code" class="text-red-400 font-bold text-xs mt-0.5">BAD_REQUEST_PAYMENT_TIMED_OUT</div>
+                <div id="dec-failure-desc" class="text-slate-400 text-[11px] mt-1 italic">Bank network response timed out</div>
+              </div>
+            </div>
+
+            <!-- Merchant Policy & Safety Gate Validation -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 font-mono text-xs">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">SafetyKernel Pre-Flight</div>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2 text-slate-300">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Merchant allows auto-retry</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Amount within max auto ceiling</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Push-cancellation race check PASS</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Atomic Idempotency Lock acquired</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Global Kill Switch: INACTIVE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column (2 spans): Candidate Action Comparison & Execution -->
+          <div class="col-span-2 space-y-4">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2 font-mono">
+                  <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i>
+                  <span>Candidate Action Economics Table</span>
+                </h4>
+                <span class="text-[11px] font-mono text-slate-400">Ranked by Expected Incremental Value (IEV)</span>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left font-mono text-xs">
+                  <thead class="bg-slate-900 text-slate-400 text-[10px] uppercase border-b border-slate-800">
+                    <tr>
+                      <th class="p-3">Action Type</th>
+                      <th class="p-3">Parameters</th>
+                      <th class="p-3">P(Rec)</th>
+                      <th class="p-3">P(Nat)</th>
+                      <th class="p-3">Inc. Uplift</th>
+                      <th class="p-3">Cost</th>
+                      <th class="p-3 font-bold text-emerald-400">Expected IEV</th>
+                    </tr>
+                  </thead>
+                  <tbody id="candidates-table-body" class="divide-y divide-slate-800/60">
+                    <!-- Rendered dynamically -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Recommendation Banner -->
+              <div class="p-4 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex items-center justify-between mt-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <div class="text-xs text-emerald-400 font-bold uppercase tracking-wider font-mono">RECOMMENDED INTERVENTION</div>
+                    <div id="dec-rec-action" class="text-sm font-black text-white font-mono mt-0.5">RETRY PAYMENT (Delay: 300s)</div>
+                    <div class="text-[11px] text-slate-300 mt-0.5">Yields maximum permitted Net Incremental Value of <strong id="dec-rec-iev" class="text-emerald-400">₹4,874.15</strong></div>
+                  </div>
+                </div>
+                <button id="btn-execute-action" onclick="executeCurrentCaseAction()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4"></i> Authorize & Execute
+                </button>
+              </div>
+
+              <!-- Execution Result Feedback -->
+              <div id="exec-feedback-banner" class="hidden p-4 rounded-xl font-mono text-xs border">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: BENCHMARK PROOF -->
+      <section id="screen-benchmark" class="screen-view hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-5 h-5 text-emerald-400"></i>
+              <span>Multi-Seed Evaluation Benchmark (N=10,000 Cases)</span>
+            </h3>
+            <p class="text-xs text-slate-400">Sealed holdout partition across 5 seeds [42, 43, 44, 45, 46] comparing all 4 locked baselines</p>
+          </div>
+          <button onclick="runBenchmarkInUI()" class="text-xs font-mono px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+            <i data-lucide="play" class="w-3.5 h-3.5"></i> Re-Run Multi-Seed Benchmark
+          </button>
+        </div>
+
+        <!-- Comparative Leaderboard Table -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900 text-slate-400 text-[11px] uppercase border-b border-slate-800">
+              <tr>
+                <th class="p-4">Strategy Baseline</th>
+                <th class="p-4">Mean Recovered (₹)</th>
+                <th class="p-4">Mean Cost (₹)</th>
+                <th class="p-4 font-bold text-emerald-400">Net Inc. Value (NIV)</th>
+                <th class="p-4">Std Dev</th>
+                <th class="p-4">Policy Efficiency</th>
+                <th class="p-4">Action Regret</th>
+                <th class="p-4">Safety Leaks</th>
+              </tr>
+            </thead>
+            <tbody id="benchmark-table-body" class="divide-y divide-slate-800/60">
+              <!-- Rendered dynamically from primary JSON artifact -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Multi-World & AI A/B Experiment Cards -->
+        <div class="grid grid-cols-2 gap-6 font-mono text-xs">
+          <!-- Multi-World Generalization -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i>
+              <span>Multi-World Generalization (Out-of-Distribution)</span>
+            </h4>
+            <div class="space-y-2 text-[11px]">
+              <div class="flex justify-between p-2.5 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-300">World V1 (Standard Distribution):</span>
+                <span class="text-emerald-400 font-bold">+8.92% NIV Uplift</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-300">World V2 (Weak Retry / Strong Notify):</span>
+                <span class="text-emerald-400 font-bold">+11.69% NIV Uplift</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-300">World V3 (High Natural / High Cost):</span>
+                <span class="text-emerald-400 font-bold">+10.57% NIV Uplift</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 italic">Proves the engine generalizes out-of-distribution without simulator bias.</p>
+          </div>
+
+          <!-- AI A/B Experiment Evidence -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="scale" class="w-4 h-4 text-amber-400"></i>
+              <span>A/B Trial: Deterministic (A) vs Selective LLM (B)</span>
+            </h4>
+            <div class="space-y-2 text-[11px]">
+              <div class="flex justify-between p-2 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-300">System A (Deterministic) Mean NIV:</span>
+                <span class="text-emerald-400 font-bold">₹1,934,406.94</span>
+              </div>
+              <div class="flex justify-between p-2 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-300">System B (Selective LLM) Mean NIV:</span>
+                <span class="text-amber-400 font-bold">₹1,842,068.69</span>
+              </div>
+              <div class="flex justify-between p-2 bg-red-950/30 rounded border border-red-500/20">
+                <span class="text-red-300 font-bold">Empirical LLM Delta:</span>
+                <span class="text-red-400 font-bold">-₹92,338.25 / seed</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 italic">Scientific Decision: Pruned LLM from autonomous financial execution to protect net profit.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: FAILURE LAB -->
+      <section id="screen-failure-lab" class="screen-view hidden space-y-6">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="flask-conical" class="w-5 h-5 text-amber-400"></i>
+            <span>Failure Lab — "What Broke & How We Got Out"</span>
+          </h3>
+          <p class="text-xs text-slate-400">Interactive live simulation of the 7 critical payment-state races and failure containment mechanisms</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 font-mono text-xs">
+          <!-- Flow A: Economic Maximization -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-white">Flow A: Economic Decisioning</span>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">IEV MAX</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Fires soft decline webhook, computes IEV across all candidates, and executes max incremental uplift.</p>
+            <button onclick="runScenario('economic_decision')" class="w-full py-2 rounded bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-500/30 transition font-bold">
+              Run Flow A
+            </button>
+          </div>
+
+          <!-- Flow B: Capture Race Push-Cancellation -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 border-emerald-500/30">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-emerald-400">Flow B: Capture Race Interception</span>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">RACE PROOF</span>
+            </div>
+            <p class="text-[11px] text-slate-400">payment.failed schedules retry $\to$ customer UPI retry captures payment $\to$ push cancellation blocks retry $\to$ 0 double charges.</p>
+            <button onclick="runScenario('capture_race')" class="w-full py-2 rounded bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 border border-emerald-500/40 transition font-bold">
+              Run Flow B (Capture Race)
+            </button>
+          </div>
+
+          <!-- Flow C: No Free Lunch -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-white">Flow C: No Free Lunch Scenario</span>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20">NO ACTION</span>
+            </div>
+            <p class="text-[11px] text-slate-400">High natural recovery (85%) makes intervention cost exceed incremental gain $\to$ chooses NO_ACTION.</p>
+            <button onclick="runScenario('no_free_lunch')" class="w-full py-2 rounded bg-slate-900 hover:bg-slate-800 text-purple-400 border border-purple-500/30 transition font-bold">
+              Run Flow C
+            </button>
+          </div>
+
+          <!-- Flow D: Payment Downtime -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-white">Flow D: Rail Downtime Sentinel</span>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">ADAPTIVE DELAY</span>
+            </div>
+            <p class="text-[11px] text-slate-400">payment.downtime.started applies adaptive 1800s delay offset $\to$ payment.downtime.resolved restores standard policy.</p>
+            <button onclick="runScenario('downtime')" class="w-full py-2 rounded bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 transition font-bold">
+              Run Flow D
+            </button>
+          </div>
+
+          <!-- Flow E: Webhook 10x Replay -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-white">Flow E: Webhook Deduplication Replay</span>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-slate-500/10 text-slate-400 border border-slate-500/20">10x REPLAY</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Posts same raw webhook 10x with identical x-razorpay-event-id $\to$ 1 processed, 9 duplicate ignored.</p>
+            <button onclick="runScenario('duplicate_replay')" class="w-full py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition font-bold">
+              Run Flow E
+            </button>
+          </div>
+
+          <!-- Flow F: Gateway 504 Timeout -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-white">Flow F: HTTP 504 Gateway Timeout</span>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-red-500/10 text-red-400 border border-red-500/20">FAIL SAFE</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Simulated 504 Gateway Timeout buffers state without triggering duplicate blind retries.</p>
+            <button onclick="runScenario('gateway_timeout')" class="w-full py-2 rounded bg-slate-900 hover:bg-slate-800 text-red-400 border border-red-500/30 transition font-bold">
+              Run Flow F
+            </button>
+          </div>
+        </div>
+
+        <!-- Failure Lab Result Output Box -->
+        <div id="scenario-output-card" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-5 font-mono text-xs space-y-3">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="font-bold text-white flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i>
+              <span>Live Scenario Execution Result</span>
+            </span>
+            <span id="scen-invariant-tag" class="text-[10px] font-bold text-emerald-400">INVARIANT VERIFIED</span>
+          </div>
+          <pre id="scen-raw-output" class="text-[11px] text-slate-300 overflow-x-auto bg-slate-900 p-4 rounded-lg border border-slate-800 custom-scrollbar"></pre>
+        </div>
+      </section>
+
+      <!-- SCREEN 6: AUDIT LEDGER -->
+      <section id="screen-audit" class="screen-view hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+              <span>Cryptographic SHA-256 Audit Ledger</span>
+            </h3>
+            <p class="text-xs text-slate-400">Tamper-evident cryptographic hash-chain recording every decision, state transition, and execution</p>
+          </div>
+          <button onclick="verifyAuditChain()" class="text-xs font-mono px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition flex items-center gap-2 shadow-lg shadow-blue-600/20">
+            <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Verify Hash Chain Integrity
+          </button>
+        </div>
+
+        <div id="audit-verify-banner" class="hidden p-4 rounded-xl font-mono text-xs border">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900 text-slate-400 text-[10px] uppercase border-b border-slate-800">
+              <tr>
+                <th class="p-3">Seq</th>
+                <th class="p-3">Timestamp</th>
+                <th class="p-3">Event Type</th>
+                <th class="p-3">Payment / Case</th>
+                <th class="p-3">Block Hash (SHA-256)</th>
+                <th class="p-3">Previous Hash</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body" class="divide-y divide-slate-800/60">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SCREEN 7: SAFETY CONTROLS -->
+      <section id="screen-safety" class="screen-view hidden space-y-6">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="sliders" class="w-5 h-5 text-emerald-400"></i>
+            <span>Merchant Safety Controls & Risk Configuration</span>
+          </h3>
+          <p class="text-xs text-slate-400">Operator guardrails, risk profile selectors, retry ceilings, and emergency controls</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 font-mono text-xs">
+          <!-- Merchant Risk Profile Selector -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+            <h4 class="text-sm font-bold text-white">Merchant Risk Profile</h4>
+            <div class="space-y-2">
+              <label class="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700">
+                <input type="radio" name="risk-profile-radio" value="Conservative" onchange="setRiskProfile(this.value)">
+                <div>
+                  <div class="font-bold text-white">Conservative</div>
+                  <div class="text-[10px] text-slate-400">Max 1 retry, 0 SMS links, Max automated ticket ₹5,000</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-3 p-3 bg-slate-900 border border-emerald-500/40 rounded-lg cursor-pointer">
+                <input type="radio" name="risk-profile-radio" value="Balanced" checked onchange="setRiskProfile(this.value)">
+                <div>
+                  <div class="font-bold text-emerald-400">Balanced (Default)</div>
+                  <div class="text-[10px] text-slate-400">Max 2 retries, SMS enabled, Max automated ticket ₹10,000</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700">
+                <input type="radio" name="risk-profile-radio" value="Aggressive" onchange="setRiskProfile(this.value)">
+                <div>
+                  <div class="font-bold text-white">Aggressive</div>
+                  <div class="text-[10px] text-slate-400">Max 3 retries, SMS enabled, Max automated ticket ₹25,000</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Global Emergency Kill Switch -->
+          <div class="bg-slate-950 border border-red-500/30 rounded-xl p-5 space-y-4">
+            <h4 class="text-sm font-bold text-red-400 flex items-center gap-2">
+              <i data-lucide="power" class="w-4 h-4 text-red-400"></i>
+              <span>Emergency Global Kill Switch</span>
+            </h4>
+            <p class="text-[11px] text-slate-400">Immediately halts 100% of autonomous recovery dispatches at Stage 7 of the SafetyKernel.</p>
+            <div class="pt-4 flex items-center gap-3">
+              <button id="btn-toggle-killswitch" onclick="toggleKillSwitch()" class="w-full py-3 rounded-lg font-bold text-xs bg-red-600 hover:bg-red-500 text-white transition shadow-lg shadow-red-600/30">
+                ACTIVATE GLOBAL KILL SWITCH
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
