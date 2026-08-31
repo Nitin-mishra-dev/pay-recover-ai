@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PayRecoverPolicyDecision",
+  "description": "Authoritative structured policy decision produced by the reasoning layer and consumed by the deterministic execution pipeline.",
+  "type": "object",
+  "required": [
+    "decision_id",
+    "case_id",
+    "payment_id",
+    "order_id",
+    "action",
+    "reason_codes",
+    "expected_recovery_amount",
+    "expected_cost",
+    "expected_net_incremental_value",
+    "confidence",
+    "policy_version",
+    "model_version",
+    "created_at",
+    "expires_at"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique deterministic or random UUID for this decision instance."
+    },
+    "case_id": {
+      "type": "string",
+      "description": "Internal recovery case identifier."
+    },
+    "payment_id": {
+      "type": "string",
+      "pattern": "^pay_[A-Za-z0-9]+$",
+      "description": "Authoritative Razorpay payment identifier."
+    },
+    "order_id": {
+      "type": "string",
+      "pattern": "^order_[A-Za-z0-9]+$",
+      "description": "Authoritative Razorpay order identifier."
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "retry_payment",
+        "notify_payment_link",
+        "escalate_to_support",
+        "no_action"
+      ],
+      "description": "The exact selected candidate action from the canonical recovery action contract."
+    },
+    "action_parameters": {
+      "type": "object",
+      "description": "Action-specific parameters (e.g. delay_seconds, channel, template_id).",
+      "properties": {
+        "delay_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["EMAIL", "SMS"]
+        },
+        "template_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Standardized reason codes explaining why this action was selected (e.g. ['temporary_gateway_failure', 'high_predicted_uplift'])."
+    },
+    "expected_recovery_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Expected recovered revenue in INR (Probability of Recovery * Transaction Amount)."
+    },
+    "expected_cost": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Expected direct and indirect intervention costs in INR."
+    },
+    "expected_net_incremental_value": {
+      "type": "number",
+      "description": "Calculated ENIV = (P_recovery * Amount) - Cost_action - Risk_penalty."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Model confidence score in the predicted recovery probability."
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Version string of the active merchant policy ruleset (e.g. 'v1.4.0')."
+    },
+    "model_version": {
+      "type": "string",
+      "description": "Version/identifier of the model/reasoner that generated this recommendation (e.g. 'gemini-2.5-flash-2026' or 'uplift-t-learner-v2')."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the decision was generated."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp after which this decision becomes stale and MUST be rejected if unexecuted."
+    }
+  },
+  "additionalProperties": false
+}

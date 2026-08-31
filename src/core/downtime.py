@@ -1,0 +1,55 @@
+"""Payment Rail Health Sentinel tracking Razorpay downtime webhooks."""
+
+import asyncio
+from datetime import datetime, timezone
+from typing import Dict, Optional
+from src.models.events import DowntimeEntity
+
+
+class PaymentRailHealthSentinel:
+    """Tracks active gateway, bank, and payment network degradation."""
+    
+    def __init__(self):
+        self._lock = asyncio.Lock()
+        # Key: (method, bank_or_network) -> DowntimeEntity
+        self._active_downtimes: Dict[str, DowntimeEntity] = {}
+    
+    def _make_key(self, method: str, bank: Optional[str] = None, network: Optional[str] = None) -> str:
+        identifier = bank or network or "global"
+        return f"{method.lower()}:{identifier.lower()}"
+    
+    async def record_downtime_started(self, entity: DowntimeEntity) -> None:
+        async with self._lock:
+            key = self._make_key(entity.method, entity.bank, entity.network)
+            self._active_downtimes[key] = entity
+    
+    async def record_downtime_resolved(self, method: str, bank: Optional[str] = None, network: Optional[str] = None) -> None:
+        async with self._lock:
+            key = self._make_key(method, bank, network)
+            self._active_downtimes.pop(key, None)
+    
+    async def is_rail_degraded(self, method: str, bank: Optional[str] = None, network: Optional[str] = None) -> bool:
+        async with self._lock:
+            key = self._make_key(method, bank, network)
+            return key in self._active_downtimes
+    
+    async def get_adaptive_delay(self, method: str, bank: Optional[str] = None, network: Optional[str] = None, default_delay: int = 300) -> int:
+        """Returns increased delay if rail is currently degraded."""
+        async with self._lock:
+            key = self._make_key(method, bank, network)
+            if key in self._active_downtimes:
+                dt = self._active_downtimes[key]
+                # If end time specified, wait until end + 300s buffer
+                now_ts = int(datetime.now(timezone.utc).timestamp())
+                if dt.end and dt.end > now_ts:
+                    return max(default_delay, (dt.end - now_ts) + 300)
+                return max(default_delay, 1800)  # Default 30 min during open-ended downtime
+            return default_delay
+    
+    async def reset(self) -> None:
+        async with self._lock:
+            self._active_downtimes.clear()
+
+
+# Global singleton instance
+rail_sentinel = PaymentRailHealthSentinel()
