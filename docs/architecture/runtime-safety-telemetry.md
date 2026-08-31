@@ -17,6 +17,9 @@ Rather than relying on decorative UI indicators, PayRecover tracks real, hard ru
 │ kill_switch_rejection_count          │ Actions halted by global emergency stop         │
 │ policy_validation_failure_count      │ Malformed LLM / input payloads failed closed    │
 │ partial_execution_count              │ Ambiguous network timeouts safely contained     │
+│ partial_execution_injected_count     │ Total ambiguous gateway network faults injected │
+│ partial_execution_contained_count    │ Ambiguous timeouts safely contained/fail-safe   │
+│ unsafe_execution_count               │ Strictly 0: Unauthorized / unfenced executions  │
 └──────────────────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
@@ -39,4 +42,11 @@ Rather than relying on decorative UI indicators, PayRecover tracks real, hard ru
 6. **`policy_validation_failure_count`**:
    * **Trigger**: Incremented whenever an LLM reasoning payload fails JSON Schema validation or produces an unrecognized enum.
 7. **`partial_execution_count`**:
-   * **Trigger**: Incremented if a downstream API call experiences a network timeout (e.g. HTTP 504) and is safely transitioned to `IN_FLIGHT_PENDING_RECON` without duplicate re-attempts.
+   * **Trigger**: Incremented if a downstream API call experiences a network timeout (e.g. HTTP 504) and is safely transitioned to fail-safe state without duplicate re-attempts.
+8. **`partial_execution_injected_count`**:
+   * **Trigger**: Incremented whenever an ambiguous network fault or gateway timeout is injected into execution.
+9. **`partial_execution_contained_count`**:
+   * **Trigger**: Incremented when an injected partial execution fault is safely caught and contained without uncontracted side-effects.
+10. **`unsafe_execution_count`**:
+    * **Trigger**: Incremented only if an unauthorized, un-idempotent, or unsafe action bypasses kernel checks.
+    * **Expected Value**: **0 (Strict Invariant)**. PayRecover AI guarantees zero unsafe executions under all faults.

@@ -1,8 +1,8 @@
-"""Independent Hidden World Physics & Causal Response Engine."""
+"""Independent Counterfactual Simulation Environment & Hidden World Physics."""
 
 import random
 from typing import Dict, Tuple
-from eval.schemas import LatentGroundTruth, ObservableCase
+from eval.schemas import LatentGroundTruth, ObservableCase, WorldVersion
 
 
 class HiddenWorldPhysics:
@@ -15,7 +15,8 @@ class HiddenWorldPhysics:
         amount_inr: float,
         rail_health_score: int,
         tenure_days: int,
-        rng: random.Random
+        rng: random.Random,
+        world_version: WorldVersion = WorldVersion.V1_STANDARD
     ) -> LatentGroundTruth:
         """Generates hidden latent variables and counterfactual outcomes for all possible actions."""
         
@@ -47,13 +48,22 @@ class HiddenWorldPhysics:
         if is_card_permanently_dead:
             p_natural = 0.0
         else:
-            # Small amounts have higher organic reattempts by users
-            if amount_inr < 1000:
-                p_natural = 0.15 * true_payer_intent
-            elif amount_inr < 10000:
-                p_natural = 0.08 * true_payer_intent
+            if world_version == WorldVersion.V3_HIGH_NATURAL_HIGH_COST:
+                # High natural organic recovery distribution
+                if amount_inr < 1000:
+                    p_natural = 0.55 * true_payer_intent
+                elif amount_inr < 10000:
+                    p_natural = 0.40 * true_payer_intent
+                else:
+                    p_natural = 0.25 * true_payer_intent
             else:
-                p_natural = 0.03 * true_payer_intent
+                # Small amounts have higher organic reattempts by users (V1 & V2)
+                if amount_inr < 1000:
+                    p_natural = 0.15 * true_payer_intent
+                elif amount_inr < 10000:
+                    p_natural = 0.08 * true_payer_intent
+                else:
+                    p_natural = 0.03 * true_payer_intent
         
         # 5. Compute Latent Probabilities for All Interventions
         latent_probs: Dict[str, float] = {}
@@ -75,26 +85,44 @@ class HiddenWorldPhysics:
                     # Retrying while outage is active almost always fails
                     p_retry = max(p_natural, 0.05 * true_payer_intent)
                 else:
-                    # Outage is over: high technical retry success on soft declines
-                    if failure_code in ["BAD_REQUEST_PAYMENT_TIMED_OUT", "GATEWAY_ERROR", "BANK_TECHNICAL_ERROR"]:
-                        p_retry = max(p_natural, 0.85 * true_payer_intent)
-                    elif failure_code in ["BAD_REQUEST_INSUFFICIENT_FUNDS", "BAD_REQUEST_PAYMENT_DECLINED_BY_BANK"]:
-                        p_retry = max(p_natural, 0.25 * true_payer_intent)
+                    # Outage is over
+                    if world_version == WorldVersion.V2_WEAK_RETRY_STRONG_NOTIFY:
+                        # Transient retry is significantly weaker in V2
+                        if failure_code in ["BAD_REQUEST_PAYMENT_TIMED_OUT", "GATEWAY_ERROR", "BANK_TECHNICAL_ERROR"]:
+                            p_retry = max(p_natural, 0.45 * true_payer_intent)
+                        elif failure_code in ["BAD_REQUEST_INSUFFICIENT_FUNDS", "BAD_REQUEST_PAYMENT_DECLINED_BY_BANK"]:
+                            p_retry = max(p_natural, 0.15 * true_payer_intent)
+                        else:
+                            p_retry = max(p_natural, 0.25 * true_payer_intent)
                     else:
-                        p_retry = max(p_natural, 0.40 * true_payer_intent)
+                        # Standard / High Cost retry (V1 & V3)
+                        if failure_code in ["BAD_REQUEST_PAYMENT_TIMED_OUT", "GATEWAY_ERROR", "BANK_TECHNICAL_ERROR"]:
+                            p_retry = max(p_natural, 0.85 * true_payer_intent)
+                        elif failure_code in ["BAD_REQUEST_INSUFFICIENT_FUNDS", "BAD_REQUEST_PAYMENT_DECLINED_BY_BANK"]:
+                            p_retry = max(p_natural, 0.25 * true_payer_intent)
+                        else:
+                            p_retry = max(p_natural, 0.40 * true_payer_intent)
                 
                 # Decay factor for very late retries (users lose patience)
                 decay = 1.0 if delay <= 1800 else 0.90
                 latent_probs[f"retry_payment:{delay}"] = min(0.98, p_retry * decay)
             
             # B. Customer Notification Links
-            if failure_code in ["BAD_REQUEST_INSUFFICIENT_FUNDS", "BAD_REQUEST_PAYMENT_AUTHENTICATION_FAILED"]:
-                # Customer action required: high notification uplift!
-                latent_probs["notify_payment_link:SMS"] = min(0.95, 0.70 * true_payer_intent)
-                latent_probs["notify_payment_link:EMAIL"] = min(0.90, 0.55 * true_payer_intent)
+            if world_version == WorldVersion.V2_WEAK_RETRY_STRONG_NOTIFY:
+                # Customer notification response is stronger in V2
+                if failure_code in ["BAD_REQUEST_INSUFFICIENT_FUNDS", "BAD_REQUEST_PAYMENT_AUTHENTICATION_FAILED"]:
+                    latent_probs["notify_payment_link:SMS"] = min(0.98, 0.90 * true_payer_intent)
+                    latent_probs["notify_payment_link:EMAIL"] = min(0.95, 0.75 * true_payer_intent)
+                else:
+                    latent_probs["notify_payment_link:SMS"] = min(0.90, 0.65 * true_payer_intent)
+                    latent_probs["notify_payment_link:EMAIL"] = min(0.85, 0.50 * true_payer_intent)
             else:
-                latent_probs["notify_payment_link:SMS"] = min(0.85, 0.45 * true_payer_intent)
-                latent_probs["notify_payment_link:EMAIL"] = min(0.80, 0.35 * true_payer_intent)
+                if failure_code in ["BAD_REQUEST_INSUFFICIENT_FUNDS", "BAD_REQUEST_PAYMENT_AUTHENTICATION_FAILED"]:
+                    latent_probs["notify_payment_link:SMS"] = min(0.95, 0.70 * true_payer_intent)
+                    latent_probs["notify_payment_link:EMAIL"] = min(0.90, 0.55 * true_payer_intent)
+                else:
+                    latent_probs["notify_payment_link:SMS"] = min(0.85, 0.45 * true_payer_intent)
+                    latent_probs["notify_payment_link:EMAIL"] = min(0.80, 0.35 * true_payer_intent)
             
             # C. Support Escalation
             latent_probs["escalate_to_support:0"] = min(0.95, 0.75 * true_payer_intent)
@@ -107,6 +135,7 @@ class HiddenWorldPhysics:
         
         return LatentGroundTruth(
             latent_case_id=case_id,
+            world_version=world_version,
             is_fraud_true=is_fraud_true,
             is_card_permanently_dead=is_card_permanently_dead,
             true_payer_intent_score=round(true_payer_intent, 4),

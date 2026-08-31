@@ -34,6 +34,7 @@ async def test_concurrent_worker_execution_race(make_failed_payment_payload):
     stale_rejections = await telemetry.get_counter("stale_action_rejection_count")
     dup_exec_attempts = await telemetry.get_counter("duplicate_execution_attempt_count")
     assert (stale_rejections + dup_exec_attempts) == 9
+    assert await telemetry.get_counter("unsafe_execution_count") == 0
     
     # Payment state must be cleanly CAPTURED
     case = await state_machine.get_case_by_payment("pay_conc_01")

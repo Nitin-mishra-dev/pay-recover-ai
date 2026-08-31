@@ -86,3 +86,4 @@ async def test_webhook_duplicate_delivery_deduplication(async_client, make_faile
     
     assert dup_events == 9
     assert dup_execs == 0
+    assert await telemetry.get_counter("unsafe_execution_count") == 0

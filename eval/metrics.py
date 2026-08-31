@@ -1,10 +1,15 @@
 """Comprehensive Metric Engine: Net Incremental Value, Regret, Brier Score, and Action Breakdowns."""
 
 import math
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from eval.baselines import BaseRecoveryPolicy
-from eval.schemas import PolicyDecision, RealizedOutcome, TransactionRecord
+from eval.schemas import (
+    PolicyDecision,
+    RealizedOutcome,
+    TransactionRecord,
+    WorldVersion,
+)
 from src.config import settings
 from src.models.actions import ActionType
 
@@ -37,6 +42,7 @@ class StrategyEvaluationResult(BaseModel):
     mean_action_regret_inr: float
     safety_violations_count: int
     brier_score: float
+    policy_efficiency_pct: Optional[float] = None
     action_breakdown: Dict[str, ActionStats] = Field(default_factory=dict)
 
 
@@ -71,12 +77,27 @@ class EvaluatorEngine:
         return "no_action:0"
     
     @staticmethod
-    def _compute_intervention_cost(decision: PolicyDecision) -> float:
+    def _compute_intervention_cost(
+        decision: PolicyDecision,
+        world_version: WorldVersion = WorldVersion.V1_STANDARD
+    ) -> float:
         atype = decision.action_type
         params = decision.action_parameters
         if atype == ActionType.NO_ACTION:
             return 0.0
-        elif atype == ActionType.RETRY_PAYMENT:
+        
+        if world_version == WorldVersion.V3_HIGH_NATURAL_HIGH_COST:
+            if atype == ActionType.RETRY_PAYMENT:
+                return 1.50
+            elif atype == ActionType.NOTIFY_PAYMENT_LINK:
+                ch = params.get("channel", "SMS")
+                ch_cost = 0.10 if ch == "EMAIL" else 1.50
+                return ch_cost + 4.00
+            elif atype == ActionType.ESCALATE_TO_SUPPORT:
+                return 150.00
+            return 0.0
+        
+        if atype == ActionType.RETRY_PAYMENT:
             return settings.direct_retry_cost_inr
         elif atype == ActionType.NOTIFY_PAYMENT_LINK:
             ch = params.get("channel", "SMS")
@@ -90,15 +111,17 @@ class EvaluatorEngine:
     def evaluate_case(
         cls,
         record: TransactionRecord,
-        policy: BaseRecoveryPolicy
+        policy: BaseRecoveryPolicy,
+        world_version: Optional[WorldVersion] = None
     ) -> RealizedOutcome:
         """Evaluates a single transaction record through a policy and independent hidden world."""
         obs = record.observable
         latent = record.latent
+        w_ver = world_version or getattr(latent, "world_version", WorldVersion.V1_STANDARD)
         amount = obs.payment.amount_inr
         
-        # 1. Policy decides purely based on observable context
-        decision = policy.decide(obs)
+        # 1. Policy decides (Oracle receives latent, other baselines use observables)
+        decision = policy.decide(obs, latent=latent)
         
         # 2. Look up independent realized outcome Y in {0, 1}
         action_key = cls._get_action_key(decision)
@@ -108,7 +131,7 @@ class EvaluatorEngine:
         natural_captured = bool(latent.counterfactual_outcomes.get("no_action:0", 0))
         
         # 4. Economic calculations
-        cost = cls._compute_intervention_cost(decision)
+        cost = cls._compute_intervention_cost(decision, world_version=w_ver)
         
         # Fraud penalty if action was taken on confirmed fraud
         risk_penalty = (amount + settings.chargeback_loss_penalty_inr) if (latent.is_fraud_true and decision.action_type != ActionType.NO_ACTION and captured) else 0.0
@@ -122,9 +145,13 @@ class EvaluatorEngine:
         best_latent_niv = 0.0
         for cand_key, cand_y in latent.counterfactual_outcomes.items():
             cand_atype = cand_key.split(":")[0]
-            cand_cost = settings.direct_retry_cost_inr if "retry" in cand_atype else (2.20 if "notify" in cand_atype else (50.0 if "escalate" in cand_atype else 0.0))
+            if w_ver == WorldVersion.V3_HIGH_NATURAL_HIGH_COST:
+                cand_cost = 1.50 if "retry" in cand_atype else (5.50 if "notify" in cand_atype else (150.0 if "escalate" in cand_atype else 0.0))
+            else:
+                cand_cost = settings.direct_retry_cost_inr if "retry" in cand_atype else (2.20 if "notify" in cand_atype else (50.0 if "escalate" in cand_atype else 0.0))
             cand_inc_rev = (amount if cand_y else 0.0) - nat_rev
-            cand_niv = cand_inc_rev - cand_cost
+            cand_risk = (amount + settings.chargeback_loss_penalty_inr) if (latent.is_fraud_true and cand_y and cand_atype != "no_action") else 0.0
+            cand_niv = cand_inc_rev - cand_cost - cand_risk
             if cand_niv > best_latent_niv:
                 best_latent_niv = cand_niv
         regret = max(0.0, best_latent_niv - niv)
@@ -164,10 +191,11 @@ class EvaluatorEngine:
     def evaluate_strategy(
         cls,
         records: List[TransactionRecord],
-        policy: BaseRecoveryPolicy
+        policy: BaseRecoveryPolicy,
+        world_version: Optional[WorldVersion] = None
     ) -> StrategyEvaluationResult:
         """Runs batch evaluation and produces structured aggregated metrics."""
-        outcomes: List[RealizedOutcome] = [cls.evaluate_case(r, policy) for r in records]
+        outcomes: List[RealizedOutcome] = [cls.evaluate_case(r, policy, world_version=world_version) for r in records]
         
         total_cases = len(outcomes)
         total_at_risk = sum(o.amount_inr for o in outcomes)

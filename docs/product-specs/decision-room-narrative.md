@@ -1,10 +1,10 @@
 # PayRecover AI — Decision Room UI Narrative Flow
 
-The Decision Room is the primary screen in PayRecover AI. It tells a complete, causal, transparent story for every at-risk transaction.
+The Decision Room is the primary screen in PayRecover AI. It tells a complete, counterfactual, transparent story for every at-risk transaction.
 
 ---
 
-## The 12-Step Causal Decision Walkthrough
+## The 12-Step Counterfactual Decision Walkthrough
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐

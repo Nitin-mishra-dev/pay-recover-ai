@@ -4,11 +4,21 @@ import hashlib
 import json
 from typing import Dict, List, Tuple
 from eval.generator import SyntheticPopulationGenerator
-from eval.schemas import TransactionRecord
+from eval.schemas import TransactionRecord, WorldVersion
 
 
 class EvaluationDataset:
-    """Manages deterministic dataset generation and sealed DEV/TEST/HOLDOUT partitioning."""
+    """Manages deterministic dataset generation and sealed DEV/TEST/HOLDOUT partitioning.
+    
+    Standard Population Model:
+        A population of N cases per seed (default N=10,000) is partitioned deterministically into:
+        - DEV:     60% (6,000 cases) - Model training and exploratory prompt tuning
+        - TEST:    20% (2,000 cases) - Validation and threshold calibration
+        - HOLDOUT: 20% (2,000 cases) - Sealed out-of-sample economic benchmark
+        
+        When running a 5-seed benchmark on the HOLDOUT split:
+        5 seeds x 2,000 cases/seed = 10,000 total evaluated observations.
+    """
     
     @staticmethod
     def partition_population(
@@ -30,10 +40,11 @@ class EvaluationDataset:
         cls,
         seed: int = 42,
         n: int = 10000,
-        split: str = "holdout"
+        split: str = "holdout",
+        world_version: WorldVersion = WorldVersion.V1_STANDARD
     ) -> List[TransactionRecord]:
-        """Generates population for the seed and returns the requested split."""
-        generator = SyntheticPopulationGenerator(seed=seed)
+        """Generates population for the seed (size n) and returns the requested split (DEV 60%, TEST 20%, HOLDOUT 20%)."""
+        generator = SyntheticPopulationGenerator(seed=seed, world_version=world_version)
         all_records = generator.generate_population(n)
         splits = cls.partition_population(all_records)
         

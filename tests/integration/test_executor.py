@@ -22,6 +22,8 @@ async def test_gateway_timeout_fail_safe(make_failed_payment_payload):
     assert exec_res["success"] is False
     assert exec_res["status"] == "GATEWAY_TIMEOUT"
     
-    # Telemetry: partial execution count incremented
-    partial_count = await telemetry.get_counter("partial_execution_count")
-    assert partial_count == 1
+    # Telemetry: partial execution counters incremented & contained safely
+    assert await telemetry.get_counter("partial_execution_injected_count") == 1
+    assert await telemetry.get_counter("partial_execution_contained_count") == 1
+    assert await telemetry.get_counter("partial_execution_count") == 1
+    assert await telemetry.get_counter("unsafe_execution_count") == 0

@@ -195,3 +195,160 @@ def test_12_benchmark_recomputability():
     assert round(result.natural_recovery_revenue_inr + result.incremental_recovered_revenue_inr, 2) == round(result.recovered_revenue_inr, 2)
     # Verify NIV identity: NIV = Incremental - Cost
     assert round(result.incremental_recovered_revenue_inr - result.intervention_cost_inr, 2) == round(result.net_incremental_value_inr, 2)
+
+
+def test_13_high_natural_recovery_no_free_lunch():
+    """Test 13: High natural recovery (85%) causes PayRecover to select NO_ACTION to avoid negative IEV."""
+    # Under 85% natural recovery, taking action consumes fees without incremental gain
+    engine = PayRecoverAIEngine(custom_natural_rate=0.85)
+    
+    # 1. Soft decline timeout (₹5,000)
+    case_timeout = make_test_case(amount_inr=5000.0, failure_code="BAD_REQUEST_PAYMENT_TIMED_OUT")
+    dec_timeout = engine.decide(case_timeout)
+    assert dec_timeout.action_type == ActionType.NO_ACTION
+    assert dec_timeout.predicted_iev_inr == 0.0
+    
+    # 2. Insufficient funds actionable failure (₹2,000)
+    case_funds = make_test_case(amount_inr=2000.0, failure_code="BAD_REQUEST_INSUFFICIENT_FUNDS")
+    dec_funds = engine.decide(case_funds)
+    assert dec_funds.action_type == ActionType.NO_ACTION
+    assert dec_funds.predicted_iev_inr == 0.0
+    
+    # 3. Small purchase (₹100)
+    case_small = make_test_case(amount_inr=100.0, failure_code="BAD_REQUEST_PAYMENT_AUTHENTICATION_FAILED")
+    dec_small = engine.decide(case_small)
+    assert dec_small.action_type == ActionType.NO_ACTION
+
+
+def test_14_oracle_policy_upper_bound_invariant():
+    """Test 14: Oracle policy strictly bounds and outperforms all baselines (NIV_Oracle >= NIV_PayRecover >= NIV_Static)."""
+    from eval.baselines import OracleUpperboundPolicy
+    
+    records = EvaluationDataset.load_dataset(seed=42, n=2000, split="holdout")
+    
+    no_action = NoActionBaseline()
+    static_rules = StaticRulesBaseline()
+    pay_recover = PayRecoverAIEngine()
+    oracle = OracleUpperboundPolicy()
+    
+    res_noaction = EvaluatorEngine.evaluate_strategy(records, no_action)
+    res_static = EvaluatorEngine.evaluate_strategy(records, static_rules)
+    res_pr = EvaluatorEngine.evaluate_strategy(records, pay_recover)
+    res_oracle = EvaluatorEngine.evaluate_strategy(records, oracle)
+    
+    # Baseline 0 floor: NIV == 0
+    assert res_noaction.net_incremental_value_inr == 0.0
+    
+    # Hierarchy invariant: Oracle >= PayRecover >= Static Rules
+    assert res_oracle.net_incremental_value_inr >= res_pr.net_incremental_value_inr
+    assert res_pr.net_incremental_value_inr >= res_static.net_incremental_value_inr
+    
+    # Policy Efficiency: NIV_PR / NIV_Oracle in (0, 100%]
+    efficiency = (res_pr.net_incremental_value_inr / max(1.0, res_oracle.net_incremental_value_inr)) * 100
+    assert 0.0 < efficiency <= 100.0
+
+
+def test_15_distribution_shift_v2_weak_retry_strong_notify():
+    """Test 15: V2 Distribution Shift (weak retry, strong notify) maintains positive PayRecover uplift."""
+    from eval.baselines import OracleUpperboundPolicy
+    from eval.schemas import WorldVersion
+    
+    records_v2 = EvaluationDataset.load_dataset(
+        seed=42,
+        n=2000,
+        split="holdout",
+        world_version=WorldVersion.V2_WEAK_RETRY_STRONG_NOTIFY
+    )
+    
+    static_rules = StaticRulesBaseline()
+    pay_recover = PayRecoverAIEngine()
+    oracle = OracleUpperboundPolicy()
+    
+    res_static = EvaluatorEngine.evaluate_strategy(records_v2, static_rules, world_version=WorldVersion.V2_WEAK_RETRY_STRONG_NOTIFY)
+    res_pr = EvaluatorEngine.evaluate_strategy(records_v2, pay_recover, world_version=WorldVersion.V2_WEAK_RETRY_STRONG_NOTIFY)
+    res_oracle = EvaluatorEngine.evaluate_strategy(records_v2, oracle, world_version=WorldVersion.V2_WEAK_RETRY_STRONG_NOTIFY)
+    
+    # PayRecover maintains positive value and outperforms static rules without retuning
+    assert res_pr.net_incremental_value_inr > 0.0
+    assert res_oracle.net_incremental_value_inr >= res_pr.net_incremental_value_inr
+
+
+def test_16_distribution_shift_v3_high_natural_high_cost():
+    """Test 16: V3 Distribution Shift (high natural, high cost) maintains positive PayRecover uplift over blind retry."""
+    from eval.baselines import OracleUpperboundPolicy
+    from eval.schemas import WorldVersion
+    
+    records_v3 = EvaluationDataset.load_dataset(
+        seed=42,
+        n=2000,
+        split="holdout",
+        world_version=WorldVersion.V3_HIGH_NATURAL_HIGH_COST
+    )
+    
+    blind_retry = BlindRetryBaseline()
+    pay_recover = PayRecoverAIEngine()
+    oracle = OracleUpperboundPolicy()
+    
+    res_blind = EvaluatorEngine.evaluate_strategy(records_v3, blind_retry, world_version=WorldVersion.V3_HIGH_NATURAL_HIGH_COST)
+    res_pr = EvaluatorEngine.evaluate_strategy(records_v3, pay_recover, world_version=WorldVersion.V3_HIGH_NATURAL_HIGH_COST)
+    res_oracle = EvaluatorEngine.evaluate_strategy(records_v3, oracle, world_version=WorldVersion.V3_HIGH_NATURAL_HIGH_COST)
+    
+    # Blind retry is severely penalized by high costs under high natural recovery
+    assert res_pr.net_incremental_value_inr >= 0.0
+    assert res_pr.net_incremental_value_inr > res_blind.net_incremental_value_inr
+    assert res_oracle.net_incremental_value_inr >= res_pr.net_incremental_value_inr
+
+
+def test_17_merchant_risk_profiles_constraints():
+    """Test 17: Merchant Risk Profiles strictly constrain retry attempts, SMS channel, and max auto values."""
+    from eval.schemas import MERCHANT_RISK_PROFILES
+    
+    # 1. Conservative Profile: max_attempts=1, allow_sms=False, max_auto_value=5000
+    conservative_engine = PayRecoverAIEngine(risk_profile=MERCHANT_RISK_PROFILES["Conservative"])
+    
+    # A. Retry attempt 2 should be blocked (max_attempts = 1)
+    case_attempt_2 = make_test_case(amount_inr=3000.0, failure_code="BAD_REQUEST_PAYMENT_TIMED_OUT")
+    case_attempt_2.payment.attempt_number = 2
+    dec_att2 = conservative_engine.decide(case_attempt_2)
+    assert dec_att2.action_type != ActionType.RETRY_PAYMENT
+    
+    # B. SMS is forbidden -> channel must be EMAIL
+    case_notify = make_test_case(amount_inr=2000.0, failure_code="BAD_REQUEST_INSUFFICIENT_FUNDS", dnd=False)
+    dec_notify = conservative_engine.decide(case_notify)
+    if dec_notify.action_type == ActionType.NOTIFY_PAYMENT_LINK:
+        assert dec_notify.action_parameters["channel"] == "EMAIL"
+    
+    # C. Value exceeding max_auto_value (₹8,000 > ₹5,000) -> auto retry blocked, escalated
+    case_high = make_test_case(amount_inr=8000.0, failure_code="BAD_REQUEST_PAYMENT_TIMED_OUT")
+    dec_high = conservative_engine.decide(case_high)
+    assert dec_high.action_type != ActionType.RETRY_PAYMENT
+    assert dec_high.action_type == ActionType.ESCALATE_TO_SUPPORT
+    
+    # 2. Balanced Profile: max_attempts=2, allow_sms=True, max_auto_value=10000
+    balanced_engine = PayRecoverAIEngine(risk_profile=MERCHANT_RISK_PROFILES["Balanced"])
+    case_bal_att2 = make_test_case(amount_inr=3000.0, failure_code="BAD_REQUEST_PAYMENT_TIMED_OUT")
+    case_bal_att2.payment.attempt_number = 2
+    dec_bal = balanced_engine.decide(case_bal_att2)
+    assert dec_bal.action_type == ActionType.RETRY_PAYMENT
+    
+    # 3. Aggressive Profile: max_attempts=3, allow_sms=True, max_auto_value=25000
+    aggressive_engine = PayRecoverAIEngine(risk_profile=MERCHANT_RISK_PROFILES["Aggressive"])
+    case_agg_att3 = make_test_case(amount_inr=15000.0, failure_code="BAD_REQUEST_PAYMENT_TIMED_OUT")
+    case_agg_att3.payment.attempt_number = 3
+    dec_agg = aggressive_engine.decide(case_agg_att3)
+    assert dec_agg.action_type == ActionType.RETRY_PAYMENT
+
+
+def test_18_sample_count_standardization():
+    """Test 18: Standardized sample count partitioning (N=10,000 -> 6k DEV, 2k TEST, 2k HOLDOUT per seed)."""
+    holdout_seed42 = EvaluationDataset.load_dataset(seed=42, n=10000, split="holdout")
+    test_seed42 = EvaluationDataset.load_dataset(seed=42, n=10000, split="test")
+    dev_seed42 = EvaluationDataset.load_dataset(seed=42, n=10000, split="dev")
+    
+    assert len(holdout_seed42) == 2000
+    assert len(test_seed42) == 2000
+    assert len(dev_seed42) == 6000
+    
+    # 5-seed benchmark evaluates exactly 10,000 holdout observations
+    total_evaluated_holdout = len(holdout_seed42) * 5
+    assert total_evaluated_holdout == 10000

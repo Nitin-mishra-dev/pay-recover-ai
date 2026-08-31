@@ -17,6 +17,9 @@ class SafetyTelemetry:
             "kill_switch_rejection_count": 0,
             "policy_validation_failure_count": 0,
             "partial_execution_count": 0,
+            "partial_execution_injected_count": 0,
+            "partial_execution_contained_count": 0,
+            "unsafe_execution_count": 0,
         }
     
     async def increment(self, counter_name: str, amount: int = 1) -> int:

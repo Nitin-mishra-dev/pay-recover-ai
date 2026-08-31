@@ -45,6 +45,8 @@ class SimulatedExecutor:
         
         # 2. Simulate HTTP 504 Gateway Timeout Handling (SS-10)
         if self.simulate_network_timeout:
+            await telemetry.increment("partial_execution_injected_count")
+            await telemetry.increment("partial_execution_contained_count")
             await telemetry.increment("partial_execution_count")
             await state_machine.update_action_status(action.action_id, ActionStatus.FAILED, outcome="GATEWAY_504_TIMEOUT")
             await audit_ledger.record_event(

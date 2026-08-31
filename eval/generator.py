@@ -10,6 +10,7 @@ from eval.schemas import (
     ObservableCase,
     PaymentContext,
     TransactionRecord,
+    WorldVersion,
 )
 from eval.world import HiddenWorldPhysics
 
@@ -29,8 +30,9 @@ DECLINE_CODES_DISTRIBUTION = [
 class SyntheticPopulationGenerator:
     """Generates realistic transaction populations with decoupled latent ground truth."""
     
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, world_version: WorldVersion = WorldVersion.V1_STANDARD):
         self.seed = seed
+        self.world_version = world_version
         self.rng = random.Random(seed)
     
     def _sample_decline_code(self) -> tuple[str, str]:
@@ -127,7 +129,8 @@ class SyntheticPopulationGenerator:
             amount_inr=amount_inr,
             rail_health_score=rail_health,
             tenure_days=tenure_days,
-            rng=self.rng
+            rng=self.rng,
+            world_version=self.world_version
         )
         
         return TransactionRecord(observable=observable, latent=latent)

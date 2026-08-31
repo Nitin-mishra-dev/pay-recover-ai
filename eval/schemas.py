@@ -7,10 +7,30 @@ from pydantic import BaseModel, Field
 from src.models.actions import ActionType
 
 
+class WorldVersion(str, Enum):
+    V1_STANDARD = "V1_STANDARD"
+    V2_WEAK_RETRY_STRONG_NOTIFY = "V2_WEAK_RETRY_STRONG_NOTIFY"
+    V3_HIGH_NATURAL_HIGH_COST = "V3_HIGH_NATURAL_HIGH_COST"
+
+
 class LatencyBucket(str, Enum):
     NORMAL = "NORMAL"
     ELEVATED = "ELEVATED"
     OUTAGE = "OUTAGE"
+
+
+class MerchantRiskProfile(BaseModel):
+    name: str = "Balanced"
+    max_attempts: int = Field(default=2, ge=1, le=5)
+    allow_sms: bool = Field(default=True)
+    max_auto_value: float = Field(default=10000.0, ge=0.0)
+
+
+MERCHANT_RISK_PROFILES: Dict[str, MerchantRiskProfile] = {
+    "Conservative": MerchantRiskProfile(name="Conservative", max_attempts=1, allow_sms=False, max_auto_value=5000.0),
+    "Balanced": MerchantRiskProfile(name="Balanced", max_attempts=2, allow_sms=True, max_auto_value=10000.0),
+    "Aggressive": MerchantRiskProfile(name="Aggressive", max_attempts=3, allow_sms=True, max_auto_value=25000.0),
+}
 
 
 class CustomerContext(BaseModel):
@@ -60,6 +80,7 @@ class LatentGroundTruth(BaseModel):
     """SEALED hidden physics and counterfactual outcomes. Never exposed to policies."""
     
     latent_case_id: str
+    world_version: WorldVersion = Field(default=WorldVersion.V1_STANDARD)
     is_fraud_true: bool = Field(default=False)
     is_card_permanently_dead: bool = Field(default=False)
     true_payer_intent_score: float = Field(ge=0.0, le=1.0)
