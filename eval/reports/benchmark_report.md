@@ -1,5 +1,5 @@
 # PayRecover AI — Economic Evaluation Benchmark Report
-**Generated At**: `2026-08-31T15:04:15.924909+00:00` | **Split**: `HOLDOUT` | **World**: `V1_STANDARD`
+**Generated At**: `2026-08-31T15:30:34.393902+00:00` | **Split**: `HOLDOUT` | **World**: `V1_STANDARD`
 **Configuration**: Seeds: 5 | Cases per Seed: 2,000 in Holdout | Total Evaluated Observations: 10,000
 
 ---

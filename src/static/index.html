@@ -155,37 +155,52 @@
 
       <!-- SCREEN 1: OVERVIEW -->
       <section id="screen-overview" class="screen-view space-y-6">
-        <!-- Top KPI Cards -->
+        <!-- Top KPI Cards with Evidence Links -->
         <div class="grid grid-cols-5 gap-4">
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
-            <div class="text-xs text-slate-400 font-mono">TOTAL REVENUE AT RISK</div>
-            <div id="stat-at-risk" class="text-2xl font-black text-white mt-1">₹12,450,000</div>
-            <div class="text-[10px] text-slate-500 mt-2 font-mono">10,000 holdout transactions</div>
-            <div class="absolute right-3 top-3 text-slate-800"><i data-lucide="alert-circle" class="w-8 h-8"></i></div>
+          <div onclick="openEvidenceModal('CLM-002')" class="bg-slate-950 border border-slate-800 hover:border-slate-600 cursor-pointer rounded-xl p-5 relative overflow-hidden transition group">
+            <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between">
+              <span>TOTAL AT-RISK (10K)</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-white transition"></i>
+            </div>
+            <div id="stat-at-risk" class="text-2xl font-black text-white mt-1">₹21,264,000</div>
+            <div class="text-[10px] text-slate-500 mt-2 font-mono">10,000 holdout cases (5 seeds)</div>
+            <div class="absolute right-3 top-3 text-slate-800 group-hover:text-slate-700 transition"><i data-lucide="alert-circle" class="w-8 h-8"></i></div>
           </div>
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
-            <div class="text-xs text-slate-400 font-mono">PAYRECOVER REVENUE</div>
-            <div id="stat-recovered" class="text-2xl font-black text-emerald-400 mt-1">₹2,195,274</div>
+          <div onclick="openEvidenceModal('CLM-002')" class="bg-slate-950 border border-slate-800 hover:border-emerald-500/50 cursor-pointer rounded-xl p-5 relative overflow-hidden transition group">
+            <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between">
+              <span>GROSS RECOVERED</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition"></i>
+            </div>
+            <div id="stat-recovered" class="text-2xl font-black text-emerald-400 mt-1">₹2,195,275</div>
             <div class="text-[10px] text-emerald-500/80 mt-2 font-mono">51.62% gross recovery rate</div>
-            <div class="absolute right-3 top-3 text-emerald-950"><i data-lucide="trending-up" class="w-8 h-8"></i></div>
+            <div class="absolute right-3 top-3 text-emerald-950 group-hover:text-emerald-900 transition"><i data-lucide="trending-up" class="w-8 h-8"></i></div>
           </div>
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden border-emerald-500/30">
-            <div class="text-xs text-emerald-400 font-mono font-bold">NET INCREMENTAL VALUE (NIV)</div>
-            <div id="stat-niv" class="text-2xl font-black text-emerald-300 mt-1">₹1,934,406</div>
+          <div onclick="openEvidenceModal('CLM-001')" class="bg-slate-950 border border-emerald-500/40 hover:border-emerald-400 cursor-pointer rounded-xl p-5 relative overflow-hidden transition group shadow-lg shadow-emerald-950/20">
+            <div class="text-[10px] text-emerald-400 font-mono font-bold flex items-center justify-between">
+              <span>NET INCREMENTAL VALUE (NIV)</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-emerald-400"></i>
+            </div>
+            <div id="stat-niv" class="text-2xl font-black text-emerald-300 mt-1">₹1,934,407</div>
             <div class="text-[10px] text-emerald-400 mt-2 font-mono font-bold">+8.92% vs Static Rules</div>
             <div class="absolute right-3 top-3 text-emerald-900/40"><i data-lucide="zap" class="w-8 h-8"></i></div>
           </div>
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
-            <div class="text-xs text-slate-400 font-mono">POLICY EFFICIENCY</div>
+          <div onclick="openEvidenceModal('CLM-001')" class="bg-slate-950 border border-slate-800 hover:border-blue-500/50 cursor-pointer rounded-xl p-5 relative overflow-hidden transition group">
+            <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between">
+              <span>POLICY EFFICIENCY</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-blue-400 transition"></i>
+            </div>
             <div id="stat-efficiency" class="text-2xl font-black text-blue-400 mt-1">55.53%</div>
             <div class="text-[10px] text-slate-500 mt-2 font-mono">of Oracle Theoretical Ceiling</div>
-            <div class="absolute right-3 top-3 text-blue-950"><i data-lucide="gauge" class="w-8 h-8"></i></div>
+            <div class="absolute right-3 top-3 text-blue-950 group-hover:text-blue-900 transition"><i data-lucide="gauge" class="w-8 h-8"></i></div>
           </div>
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
-            <div class="text-xs text-slate-400 font-mono">UNSAFE EXECUTIONS</div>
+          <div onclick="openEvidenceModal('CLM-009')" class="bg-slate-950 border border-slate-800 hover:border-emerald-500/50 cursor-pointer rounded-xl p-5 relative overflow-hidden transition group">
+            <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between">
+              <span>UNSAFE EXECUTIONS</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition"></i>
+            </div>
             <div id="stat-unsafe" class="text-2xl font-black text-emerald-400 mt-1">0</div>
             <div class="text-[10px] text-slate-500 mt-2 font-mono">Strict 0 Double Charges</div>
-            <div class="absolute right-3 top-3 text-slate-800"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
+            <div class="absolute right-3 top-3 text-slate-800 group-hover:text-emerald-950 transition"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
           </div>
         </div>
 
@@ -697,6 +712,54 @@
 
     </div>
   </main>
+
+  <!-- Evidence Drawer Modal -->
+  <div id="evidence-modal-backdrop" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-950 border border-slate-700 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl font-mono text-xs relative">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2 text-white font-bold text-sm">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          <span id="evidence-modal-title">Verification Evidence Artifact</span>
+        </div>
+        <button onclick="closeEvidenceModal()" class="text-slate-400 hover:text-white transition p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-[11px]">
+        <div class="flex justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+          <span class="text-slate-400">Claim ID:</span>
+          <span id="ev-claim-id" class="text-emerald-400 font-bold">CLM-001</span>
+        </div>
+        <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800 space-y-1">
+          <span class="text-slate-400 text-[10px]">Factual Assertion:</span>
+          <div id="ev-assertion" class="text-white font-sans text-xs font-semibold">PayRecover AI achieves +8.92% Net Incremental Value (NIV) uplift over Static Rules.</div>
+        </div>
+        <div class="flex justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+          <span class="text-slate-400">Dataset Partition:</span>
+          <span id="ev-dataset" class="text-blue-400 font-bold">HOLDOUT (N=10,000 across Seeds 42-46)</span>
+        </div>
+        <div class="flex justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+          <span class="text-slate-400">Source JSON Artifact:</span>
+          <span id="ev-artifact" class="text-purple-400 font-bold">eval/results/benchmark_holdout_multiseed.json</span>
+        </div>
+        <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800 space-y-1">
+          <span class="text-slate-400 text-[10px]">Reproducible Terminal Command:</span>
+          <pre id="ev-command" class="text-[10px] text-emerald-300 bg-slate-950 p-2 rounded border border-slate-800 overflow-x-auto">python3 -m eval.run --split holdout --seeds 42,43,44,45,46 --n 10000</pre>
+        </div>
+        <div class="flex justify-between p-2.5 bg-emerald-950/40 rounded-lg border border-emerald-500/40">
+          <span class="text-emerald-400 font-bold">Verification Status:</span>
+          <span id="ev-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">VERIFIED (100% INVARIANT MATCH)</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeEvidenceModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition">
+          Close Evidence Drawer
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="/app.js"></script>
 </body>
