@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "timestamp": "2026-08-31T15:10:51.039164+00:00",
+    "split": "holdout",
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "total_evaluated": 10000,
+    "system_a": "Deterministic PayRecover",
+    "system_b": "Selective LLM PayRecover"
+  },
+  "headline_metrics": {
+    "system_a_mean_niv_inr": 1934406.94,
+    "system_b_mean_niv_inr": 1842068.69,
+    "delta_niv_mean_per_seed_inr": -92338.25,
+    "total_incremental_gain_inr": -461691.25,
+    "relative_uplift_pct": -4.77,
+    "ai_coverage_pct": 14.28,
+    "total_llm_calls": 1428,
+    "total_llm_cost_inr": 104.11,
+    "avg_llm_latency_ms": 120.03,
+    "ai_roi_multiple": -4434.65,
+    "fallback_count": 0,
+    "safety_violations": 0
+  },
+  "per_seed_data": {
+    "42": {
+      "system_a_niv_inr": 1885748.76,
+      "system_b_niv_inr": 1828339.18,
+      "diff_inr": -57409.58
+    },
+    "43": {
+      "system_a_niv_inr": 1889489.24,
+      "system_b_niv_inr": 1806328.3,
+      "diff_inr": -83160.94
+    },
+    "44": {
+      "system_a_niv_inr": 2021510.56,
+      "system_b_niv_inr": 1856067.42,
+      "diff_inr": -165443.14
+    },
+    "45": {
+      "system_a_niv_inr": 1956890.36,
+      "system_b_niv_inr": 1899492.16,
+      "diff_inr": -57398.2
+    },
+    "46": {
+      "system_a_niv_inr": 1918395.76,
+      "system_b_niv_inr": 1820116.38,
+      "diff_inr": -98279.38
+    }
+  }
+}
