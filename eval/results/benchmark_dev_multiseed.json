@@ -1,0 +1,234 @@
+{
+  "metadata": {
+    "timestamp": "2026-08-31T14:47:48.117219+00:00",
+    "split": "dev",
+    "sample_size_per_seed": 60,
+    "total_evaluated_transactions": 60,
+    "seeds": [
+      42
+    ],
+    "baselines_locked": true,
+    "ground_truth_independent": true
+  },
+  "headline_metrics": {
+    "payrecover_mean_niv_inr": 108947.42,
+    "static_rules_mean_niv_inr": 107047.6,
+    "niv_uplift_vs_static_rules_pct": 1.77,
+    "recovery_uplift_vs_no_action_pct": 1882.34,
+    "safety_violations_count": 0
+  },
+  "aggregated_results": {
+    "Baseline 0: No Action": {
+      "mean_recovered_revenue_inr": 5794.0,
+      "std_recovered_revenue_inr": 0.0,
+      "mean_net_incremental_value_inr": 0.0,
+      "std_net_incremental_value_inr": 0.0,
+      "min_net_incremental_value_inr": 0.0,
+      "max_net_incremental_value_inr": 0.0,
+      "mean_recovery_rate_pct": 3.47,
+      "mean_cost_inr": 0.0,
+      "mean_action_regret_inr": 2355.33,
+      "mean_brier_score": 0.1
+    },
+    "Baseline 1: Blind Retry": {
+      "mean_recovered_revenue_inr": 71972.0,
+      "std_recovered_revenue_inr": 0.0,
+      "mean_net_incremental_value_inr": 66148.0,
+      "std_net_incremental_value_inr": 0.0,
+      "min_net_incremental_value_inr": 66148.0,
+      "max_net_incremental_value_inr": 66148.0,
+      "mean_recovery_rate_pct": 43.09,
+      "mean_cost_inr": 30.0,
+      "mean_action_regret_inr": 1252.87,
+      "mean_brier_score": 0.25
+    },
+    "Baseline 2: Static Rules Engine": {
+      "mean_recovered_revenue_inr": 112946.0,
+      "std_recovered_revenue_inr": 0.0,
+      "mean_net_incremental_value_inr": 107047.6,
+      "std_net_incremental_value_inr": 0.0,
+      "min_net_incremental_value_inr": 107047.6,
+      "max_net_incremental_value_inr": 107047.6,
+      "mean_recovery_rate_pct": 67.62,
+      "mean_cost_inr": 104.4,
+      "mean_action_regret_inr": 571.21,
+      "mean_brier_score": 0.2557
+    },
+    "Baseline 3: PayRecover AI": {
+      "mean_recovered_revenue_inr": 114857.0,
+      "std_recovered_revenue_inr": 0.0,
+      "mean_net_incremental_value_inr": 108947.42,
+      "std_net_incremental_value_inr": 0.0,
+      "min_net_incremental_value_inr": 108947.42,
+      "max_net_incremental_value_inr": 108947.42,
+      "mean_recovery_rate_pct": 68.77,
+      "mean_cost_inr": 115.58,
+      "mean_action_regret_inr": 539.55,
+      "mean_brier_score": 0.23
+    }
+  },
+  "per_seed_runs": {
+    "42": {
+      "Baseline 0: No Action": {
+        "strategy_name": "Baseline 0: No Action",
+        "total_cases": 60,
+        "total_at_risk_revenue_inr": 167023.0,
+        "recovered_revenue_inr": 5794.0,
+        "natural_recovery_revenue_inr": 5794.0,
+        "incremental_recovered_revenue_inr": 0.0,
+        "intervention_cost_inr": 0.0,
+        "net_incremental_value_inr": 0.0,
+        "cost_per_incremental_rupee_recovered": 0.0,
+        "overall_recovery_rate_pct": 3.47,
+        "incremental_uplift_pct": 0.0,
+        "total_interventions": 0,
+        "intervention_rate_pct": 0.0,
+        "mean_action_regret_inr": 2355.33,
+        "safety_violations_count": 0,
+        "brier_score": 0.1,
+        "action_breakdown": {
+          "no_action": {
+            "action_type": "no_action",
+            "proposed_count": 60,
+            "success_count": 6,
+            "recovered_revenue_inr": 5794.0,
+            "intervention_cost_inr": 0.0,
+            "net_value_inr": 0.0
+          }
+        }
+      },
+      "Baseline 1: Blind Retry": {
+        "strategy_name": "Baseline 1: Blind Retry",
+        "total_cases": 60,
+        "total_at_risk_revenue_inr": 167023.0,
+        "recovered_revenue_inr": 71972.0,
+        "natural_recovery_revenue_inr": 5794.0,
+        "incremental_recovered_revenue_inr": 66178.0,
+        "intervention_cost_inr": 30.0,
+        "net_incremental_value_inr": 66148.0,
+        "cost_per_incremental_rupee_recovered": 0.0005,
+        "overall_recovery_rate_pct": 43.09,
+        "incremental_uplift_pct": 1142.18,
+        "total_interventions": 60,
+        "intervention_rate_pct": 100.0,
+        "mean_action_regret_inr": 1252.87,
+        "safety_violations_count": 0,
+        "brier_score": 0.25,
+        "action_breakdown": {
+          "retry_payment": {
+            "action_type": "retry_payment",
+            "proposed_count": 60,
+            "success_count": 18,
+            "recovered_revenue_inr": 71972.0,
+            "intervention_cost_inr": 30.0,
+            "net_value_inr": 66148.0
+          }
+        }
+      },
+      "Baseline 2: Static Rules Engine": {
+        "strategy_name": "Baseline 2: Static Rules Engine",
+        "total_cases": 60,
+        "total_at_risk_revenue_inr": 167023.0,
+        "recovered_revenue_inr": 112946.0,
+        "natural_recovery_revenue_inr": 5794.0,
+        "incremental_recovered_revenue_inr": 107152.0,
+        "intervention_cost_inr": 104.4,
+        "net_incremental_value_inr": 107047.6,
+        "cost_per_incremental_rupee_recovered": 0.001,
+        "overall_recovery_rate_pct": 67.62,
+        "incremental_uplift_pct": 1849.36,
+        "total_interventions": 52,
+        "intervention_rate_pct": 86.67,
+        "mean_action_regret_inr": 571.21,
+        "safety_violations_count": 0,
+        "brier_score": 0.2557,
+        "action_breakdown": {
+          "notify_payment_link": {
+            "action_type": "notify_payment_link",
+            "proposed_count": 17,
+            "success_count": 11,
+            "recovered_revenue_inr": 20271.0,
+            "intervention_cost_inr": 37.4,
+            "net_value_inr": 20233.6
+          },
+          "retry_payment": {
+            "action_type": "retry_payment",
+            "proposed_count": 34,
+            "success_count": 16,
+            "recovered_revenue_inr": 66988.0,
+            "intervention_cost_inr": 17.0,
+            "net_value_inr": 61177.0
+          },
+          "no_action": {
+            "action_type": "no_action",
+            "proposed_count": 8,
+            "success_count": 0,
+            "recovered_revenue_inr": 0.0,
+            "intervention_cost_inr": 0.0,
+            "net_value_inr": 0.0
+          },
+          "escalate_to_support": {
+            "action_type": "escalate_to_support",
+            "proposed_count": 1,
+            "success_count": 1,
+            "recovered_revenue_inr": 25687.0,
+            "intervention_cost_inr": 50.0,
+            "net_value_inr": 25637.0
+          }
+        }
+      },
+      "Baseline 3: PayRecover AI": {
+        "strategy_name": "Baseline 3: PayRecover AI",
+        "total_cases": 60,
+        "total_at_risk_revenue_inr": 167023.0,
+        "recovered_revenue_inr": 114857.0,
+        "natural_recovery_revenue_inr": 5794.0,
+        "incremental_recovered_revenue_inr": 109063.0,
+        "intervention_cost_inr": 115.58,
+        "net_incremental_value_inr": 108947.42,
+        "cost_per_incremental_rupee_recovered": 0.0011,
+        "overall_recovery_rate_pct": 68.77,
+        "incremental_uplift_pct": 1882.34,
+        "total_interventions": 52,
+        "intervention_rate_pct": 86.67,
+        "mean_action_regret_inr": 539.55,
+        "safety_violations_count": 0,
+        "brier_score": 0.23,
+        "action_breakdown": {
+          "notify_payment_link": {
+            "action_type": "notify_payment_link",
+            "proposed_count": 24,
+            "success_count": 13,
+            "recovered_revenue_inr": 22897.0,
+            "intervention_cost_inr": 52.08,
+            "net_value_inr": 22844.92
+          },
+          "retry_payment": {
+            "action_type": "retry_payment",
+            "proposed_count": 27,
+            "success_count": 16,
+            "recovered_revenue_inr": 66273.0,
+            "intervention_cost_inr": 13.5,
+            "net_value_inr": 60465.5
+          },
+          "no_action": {
+            "action_type": "no_action",
+            "proposed_count": 8,
+            "success_count": 0,
+            "recovered_revenue_inr": 0.0,
+            "intervention_cost_inr": 0.0,
+            "net_value_inr": 0.0
+          },
+          "escalate_to_support": {
+            "action_type": "escalate_to_support",
+            "proposed_count": 1,
+            "success_count": 1,
+            "recovered_revenue_inr": 25687.0,
+            "intervention_cost_inr": 50.0,
+            "net_value_inr": 25637.0
+          }
+        }
+      }
+    }
+  }
+}
