@@ -26,16 +26,17 @@ PayRecover AI is an intelligent post-failure recovery layer that operates betwee
 │ Estimated Natural Recovery    │ ₹258,400.00     │ ₹258,400.00  │ Subtracted      │
 │ Gross Recovery Rate           │ 48.79%          │ 51.62%       │ +2.83% pts      │
 │ Direct Intervention Costs     │ ₹299,220.74     │ ₹260,867.86  │ -₹38,352.88     │
-│ Net Incremental Value (NIV)   │ ₹1,775,967.42   │ ₹1,934,406.94│ +₹158,439.52/sd*│
+│ Net Incremental Value (NIV)   │ ₹1,775,967.42   │ ₹1,934,406.94│ +₹158,439.52*   │
 │ NIV Relative Uplift           │ Baseline        │ +8.92%       │ +8.92% vs Static│
 │ Policy Efficiency vs Oracle   │ 50.99%          │ 55.53%       │ +4.54% pts      │
 │ Action Regret (Mean)          │ ₹1,707.13       │ ₹1,548.69    │ -9.28% Regret   │
 │ Unsafe Executions (Simulated) │ 0               │ 0            │ 0 in test races │
 └───────────────────────────────┴─────────────────┴──────────────┴─────────────────┘
-* Average incremental gain of +₹158,439.52 per 2,000-case seed batch (+₹792,197.58 aggregate across 10,000 holdout cases).
+* Average incremental gain of +₹158,439.52 per 2,000-case seed (+8.92% uplift). Total aggregate net gain across all 10,000 holdout observations is +₹792,197.58.
 ```
 
-*All metrics recomputable via:* `python3 -m eval.run --split holdout --seeds 42,43,44,45,46 --n 10000`
+*All metrics recomputable via:* `python3 -m eval.run --split holdout --seeds 42,43,44,45,46 --n 10000`  
+> **Benchmark convention**: `--n 10000` generates a total population of 10,000 cases per seed, partitioned deterministically into DEV (60%), TEST (20%), and sealed HOLDOUT (20% = 2,000 cases). Across 5 independent random seeds (`42, 43, 44, 45, 46`), the holdout evaluation evaluates exactly **10,000 total unseen observations**.
 
 ---
 
