@@ -1,4 +1,11 @@
-"""Authoritative Payment State Machine with transactional updates and push-cancellation."""
+"""Authoritative Payment State Machine with serialized state transitions and push-cancellation.
+
+Reference Architecture:
+Uses process-local asyncio.Lock serialization for zero-setup competition evaluation
+and deterministic benchmarking. For multi-worker distributed production, state transitions
+map to PostgreSQL transactional row locks (SELECT ... FOR UPDATE via asyncpg) or Redis
+distributed leases.
+"""
 
 import asyncio
 import uuid
@@ -16,7 +23,7 @@ from src.models.state import ActionStatus, PaymentCase, PaymentState, RecoveryAc
 
 
 class PaymentStateMachine:
-    """Authoritative aggregate state store and transition engine."""
+    """Authoritative aggregate state store and transition engine (process-local reference implementation)."""
     
     def __init__(self):
         self._lock = asyncio.Lock()

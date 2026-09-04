@@ -9,7 +9,7 @@ description = "Adaptive Post-Failure Revenue Recovery Decision Engine for Razorp
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    { name = "Nitin Mishra", email = "nitin@example.com" }
+    { name = "Nitin Mishra", email = "nitinkumar400@users.noreply.github.com" }
 ]
 dependencies = [
     "fastapi>=0.110.0",

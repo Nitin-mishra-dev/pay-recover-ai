@@ -1,4 +1,10 @@
-"""Two-tier idempotency management: external webhook events & internal action execution."""
+"""Two-tier idempotency management: external webhook events & internal action execution.
+
+Reference Architecture:
+Uses process-local memory sets and asyncio lock for zero-setup evaluation reproducibility.
+In distributed production deployments, backed by Redis distributed atomic keys (SET NX EX)
+or PostgreSQL unique transaction constraints.
+"""
 
 import asyncio
 import hashlib
@@ -7,7 +13,7 @@ from typing import Any, Dict, Set
 
 
 class IdempotencyManager:
-    """Manages event deduplication and action execution locks."""
+    """Manages event deduplication and action execution locks (reference implementation)."""
     
     def __init__(self):
         self._lock = asyncio.Lock()

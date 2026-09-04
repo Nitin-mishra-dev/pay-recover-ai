@@ -43,7 +43,7 @@ async def test_concurrent_worker_execution_race(make_failed_payment_payload):
 
 @pytest.mark.asyncio
 async def test_action_idempotency_lock_direct_conflict(make_failed_payment_payload):
-    """Stage 6: Pre-acquired idempotency lock blocks execution and increments duplicate_execution_attempt_count."""
+    """Stage 7: Pre-acquired idempotency lock blocks execution and increments duplicate_execution_attempt_count."""
     payload = make_failed_payment_payload(payment_id="pay_idem_01", order_id="order_idem_01")
     event = RazorpayWebhookEvent.model_validate(payload)
     res = await state_machine.process_webhook_event(event)
@@ -53,10 +53,10 @@ async def test_action_idempotency_lock_direct_conflict(make_failed_payment_paylo
     # Pre-acquire the idempotency lock externally
     await idempotency_manager.try_acquire_action_lock(action.idempotency_key)
     
-    # Attempt execution -> must be blocked at Stage 6
+    # Attempt execution -> must be blocked at Stage 7
     exec_res = await simulated_executor.execute_action(action_id)
     assert exec_res["success"] is False
-    assert "STAGE_6_IDEMPOTENCY_CONFLICT" in exec_res["reason"]
+    assert "STAGE_7_IDEMPOTENCY_CONFLICT" in exec_res["reason"]
     
     dup_attempts = await telemetry.get_counter("duplicate_execution_attempt_count")
     assert dup_attempts == 1

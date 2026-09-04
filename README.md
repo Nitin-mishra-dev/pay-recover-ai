@@ -96,7 +96,7 @@ We ran an identical-condition empirical A/B benchmark comparing **System A (Dete
                    └─────────────┬─────────────┘
                                  │
                    ┌─────────────▼─────────────┐
-                   │   PaymentStateMachine     │  (Transactional State Lock)
+                   │   PaymentStateMachine     │  (Process-Local Serialized State Lock)
                    └─────────────┬─────────────┘
                                  │
        ┌─────────────────────────┴─────────────────────────┐
@@ -119,8 +119,8 @@ We ran an identical-condition empirical A/B benchmark comparing **System A (Dete
                    │ • Stage 3: Merchant Limits│
                    │ • Stage 4: Retry Ceiling  │
                    │ • Stage 5: Push-Freshness │
-                   │ • Stage 6: Atomic IdemLock│
-                   │ • Stage 7: Kill Switch    │
+                   │ • Stage 6: Kill Switch    │
+                   │ • Stage 7: Atomic IdemLock│
                    │ • Stage 8: Auth Dispatch  │
                    └─────────────┬─────────────┘
                                  │
@@ -128,6 +128,10 @@ We ran an identical-condition empirical A/B benchmark comparing **System A (Dete
                    │  SHA-256 Audit Chain      │  (Tamper-Evident Ledger)
                    └───────────────────────────┘
 ```
+
+> [!NOTE]
+> **Reference Architecture vs Distributed Deployment**:
+> For single-process competition execution, deterministic benchmarking, and zero-setup reproducibility, `PaymentStateMachine` uses process-local `asyncio.Lock()` serialization and SQLite (`aiosqlite`). In multi-worker horizontally scaled production deployments, this architecture maps directly to PostgreSQL row-level locks (`SELECT ... FOR UPDATE` via `asyncpg`, configurable via `DATABASE_URL`) and Redis-backed distributed locks (`Redlock`), ensuring multi-instance ACID consistency across parallel workers.
 
 ---
 
@@ -187,7 +191,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. Run Complete Invariant Test Suite (45 Tests)
+# 3. Run Complete Invariant Test Suite (47 Tests)
 python3 -m pytest -v --tb=short
 
 # 4. Reproduce Multi-Seed Holdout Benchmark (N=10,000)
@@ -232,3 +236,4 @@ pay-recover-ai/
 1. **Simulated Execution**: This repository is a competition-grade proof-of-concept with simulated Razorpay API responses. It does not initiate live financial debit on real bank accounts.
 2. **Post-Failure Scope**: PayRecover is designed exclusively for the post-failure recovery window; it does not replace pre-transaction routing infrastructure.
 3. **Audit Ledger Scope**: The internal SHA-256 cryptographic hash-chain provides tamper-evidence within the application process; production enterprise deployments should mirror hashes to an append-only external witness ledger.
+4. **Process-Local State Serialization**: The default reference implementation serializes state locally via asyncio locks and SQLite for zero-setup reproducibility. Horizontally scaled multi-worker production clusters require PostgreSQL row locks (`SELECT ... FOR UPDATE` via `asyncpg`) or Redis distributed locks as documented.

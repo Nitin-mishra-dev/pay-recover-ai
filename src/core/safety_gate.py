@@ -55,12 +55,30 @@ class DeterministicSafetyKernel:
             return SafetyGateResult(authorized=False, reason="CASE_NOT_FOUND")
         
         # -------------------------------------------------------------
-        # STAGE 2: Parameter Bounds Normalization
+        # STAGE 2: Parameter Bounds Verification (Fail-Closed)
         # -------------------------------------------------------------
         if action.action_type == ActionType.RETRY_PAYMENT.value:
             delay = action.action_parameters.get("delay_seconds", 0)
-            if delay < 0 or delay > 86400:
-                action.action_parameters["delay_seconds"] = max(0, min(86400, delay))
+            if not isinstance(delay, (int, float)) or delay < 0 or delay > 86400:
+                await telemetry.increment("unauthorized_action_count")
+                await audit_ledger.record_event(
+                    AuditEventType.SAFETY_CHECK_FAILED,
+                    {"stage": 2, "error": "invalid_delay_bounds", "delay_seconds": delay, "case_id": case.case_id},
+                    case_id=case.case_id,
+                    payment_id=case.payment_id
+                )
+                return SafetyGateResult(authorized=False, reason="STAGE_2_INVALID_DELAY_BOUNDS", action=action)
+        elif action.action_type == ActionType.NOTIFY_PAYMENT_LINK.value:
+            expiry = action.action_parameters.get("link_expiry_minutes", 1440)
+            if not isinstance(expiry, (int, float)) or expiry < 5 or expiry > 10080:
+                await telemetry.increment("unauthorized_action_count")
+                await audit_ledger.record_event(
+                    AuditEventType.SAFETY_CHECK_FAILED,
+                    {"stage": 2, "error": "invalid_expiry_bounds", "link_expiry_minutes": expiry, "case_id": case.case_id},
+                    case_id=case.case_id,
+                    payment_id=case.payment_id
+                )
+                return SafetyGateResult(authorized=False, reason="STAGE_2_INVALID_EXPIRY_BOUNDS", action=action)
         
         # -------------------------------------------------------------
         # STAGE 3: Merchant Policy Compliance (Cooldowns)
@@ -111,32 +129,33 @@ class DeterministicSafetyKernel:
             return SafetyGateResult(authorized=False, reason="STAGE_5_ACTION_ALREADY_CANCELLED", action=action)
         
         # -------------------------------------------------------------
-        # STAGE 6: Atomic Idempotency Lock Acquisition
+        # STAGE 6: Global Emergency Kill Switch
+        # -------------------------------------------------------------
+        # Invariant: Checked before lock acquisition to avoid burning idempotency leases during platform emergency stop
+        if settings.global_kill_switch:
+            await telemetry.increment("kill_switch_rejection_count")
+            await audit_ledger.record_event(
+                AuditEventType.KILL_SWITCH_BLOCKED,
+                {"stage": 6, "note": "global_kill_switch_active", "action_id": action.action_id},
+                case_id=case.case_id,
+                payment_id=case.payment_id
+            )
+            await state_machine.update_action_status(action.action_id, ActionStatus.BLOCKED_KILL_SWITCH)
+            return SafetyGateResult(authorized=False, reason="STAGE_6_GLOBAL_KILL_SWITCH_ACTIVE", action=action)
+        
+        # -------------------------------------------------------------
+        # STAGE 7: Atomic Idempotency Lock Acquisition
         # -------------------------------------------------------------
         lock_acquired = await idempotency_manager.try_acquire_action_lock(action.idempotency_key)
         if not lock_acquired:
             await telemetry.increment("duplicate_execution_attempt_count")
             await audit_ledger.record_event(
                 AuditEventType.SAFETY_CHECK_FAILED,
-                {"stage": 6, "error": "action_idempotency_lock_conflict", "key": action.idempotency_key},
+                {"stage": 7, "error": "action_idempotency_lock_conflict", "key": action.idempotency_key},
                 case_id=case.case_id,
                 payment_id=case.payment_id
             )
-            return SafetyGateResult(authorized=False, reason="STAGE_6_IDEMPOTENCY_CONFLICT", action=action)
-        
-        # -------------------------------------------------------------
-        # STAGE 7: Global Emergency Kill Switch
-        # -------------------------------------------------------------
-        if settings.global_kill_switch:
-            await telemetry.increment("kill_switch_rejection_count")
-            await audit_ledger.record_event(
-                AuditEventType.KILL_SWITCH_BLOCKED,
-                {"stage": 7, "note": "global_kill_switch_active", "action_id": action.action_id},
-                case_id=case.case_id,
-                payment_id=case.payment_id
-            )
-            await state_machine.update_action_status(action.action_id, ActionStatus.BLOCKED_KILL_SWITCH)
-            return SafetyGateResult(authorized=False, reason="STAGE_7_GLOBAL_KILL_SWITCH_ACTIVE", action=action)
+            return SafetyGateResult(authorized=False, reason="STAGE_7_IDEMPOTENCY_CONFLICT", action=action)
         
         # -------------------------------------------------------------
         # STAGE 8: Execution Authorization

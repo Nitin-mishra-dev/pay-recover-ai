@@ -2,6 +2,7 @@
 
 import pytest
 from src.config import settings
+from src.core.idempotency import idempotency_manager
 from src.core.safety_gate import safety_kernel
 from src.core.state_machine import state_machine
 from src.core.telemetry import telemetry
@@ -76,3 +77,42 @@ async def test_dispute_halts_recovery(make_failed_payment_payload):
     exec_res = await simulated_executor.execute_action(action_id)
     assert exec_res["success"] is False
     assert "DISPUTED" in exec_res["reason"]
+
+
+@pytest.mark.asyncio
+async def test_kill_switch_does_not_consume_idempotency_lock(make_failed_payment_payload):
+    """Stage 6 Kill Switch fires before Stage 7 Idempotency Lock so the lock lease is preserved."""
+    payload = make_failed_payment_payload(payment_id="pay_ks_lock_01", order_id="order_ks_lock_01")
+    event = RazorpayWebhookEvent.model_validate(payload)
+    res = await state_machine.process_webhook_event(event)
+    action_id = res["action_id"]
+    action = await state_machine.get_action(action_id)
+    
+    settings.global_kill_switch = True
+    exec_res = await simulated_executor.execute_action(action_id)
+    assert exec_res["success"] is False
+    assert "STAGE_6_GLOBAL_KILL_SWITCH_ACTIVE" in exec_res["reason"]
+    
+    # Crucial architectural invariant: Idempotency lock was NOT acquired
+    assert action.idempotency_key not in idempotency_manager._acquired_action_locks
+
+
+@pytest.mark.asyncio
+async def test_parameter_bounds_fail_closed(make_failed_payment_payload):
+    """Stage 2: Out-of-bounds parameters fail-closed instead of silently clamping."""
+    payload = make_failed_payment_payload(payment_id="pay_bounds_01", order_id="order_bounds_01")
+    event = RazorpayWebhookEvent.model_validate(payload)
+    res = await state_machine.process_webhook_event(event)
+    action_id = res["action_id"]
+    action = await state_machine.get_action(action_id)
+    
+    # Inject rogue delay parameter (e.g. 999999 seconds or negative delay)
+    action.action_parameters["delay_seconds"] = 999999
+    
+    exec_res = await simulated_executor.execute_action(action_id)
+    assert exec_res["success"] is False
+    assert "STAGE_2_INVALID_DELAY_BOUNDS" in exec_res["reason"]
+    
+    unauth_count = await telemetry.get_counter("unauthorized_action_count")
+    assert unauth_count >= 1
+
