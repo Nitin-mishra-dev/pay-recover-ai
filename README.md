@@ -26,12 +26,13 @@ PayRecover AI is an intelligent post-failure recovery layer that operates betwee
 │ Estimated Natural Recovery    │ ₹258,400.00     │ ₹258,400.00  │ Subtracted      │
 │ Gross Recovery Rate           │ 48.79%          │ 51.62%       │ +2.83% pts      │
 │ Direct Intervention Costs     │ ₹299,220.74     │ ₹260,867.86  │ -₹38,352.88     │
-│ Net Incremental Value (NIV)   │ ₹1,775,967.42   │ ₹1,934,406.94│ +₹158,439.52/sd │
+│ Net Incremental Value (NIV)   │ ₹1,775,967.42   │ ₹1,934,406.94│ +₹158,439.52/sd*│
 │ NIV Relative Uplift           │ Baseline        │ +8.92%       │ +8.92% vs Static│
 │ Policy Efficiency vs Oracle   │ 50.99%          │ 55.53%       │ +4.54% pts      │
 │ Action Regret (Mean)          │ ₹1,707.13       │ ₹1,548.69    │ -9.28% Regret   │
-│ Unsafe Executions             │ 0               │ 0 (Strict)   │ 0 Double Charge │
+│ Unsafe Executions (Simulated) │ 0               │ 0            │ 0 in test races │
 └───────────────────────────────┴─────────────────┴──────────────┴─────────────────┘
+* Average incremental gain of +₹158,439.52 per 2,000-case seed batch (+₹792,197.58 aggregate across 10,000 holdout cases).
 ```
 
 *All metrics recomputable via:* `python3 -m eval.run --split holdout --seeds 42,43,44,45,46 --n 10000`
@@ -64,11 +65,12 @@ We ran an identical-condition empirical A/B benchmark comparing **System A (Dete
 
 ```text
 =====================================================================================
- A/B EXPERIMENT OUTCOME SUMMARY (10,000 Sealed Holdout Cases)
+ A/B EXPERIMENT OUTCOME SUMMARY (10,000 Sealed Holdout Cases across 5 Seeds)
 =====================================================================================
  System A (Deterministic Engine) Mean NIV: ₹1,934,406.94
  System B (Selective LLM Engine) Mean NIV: ₹1,842,068.69
- Empirical Delta (System B - System A):    -₹92,338.25 per 2,000-case seed (-₹461.6k total)
+ Empirical Delta (System B - System A):    -₹92,338.25 per 2,000-case seed on average
+                                           (-₹461,691.25 aggregate across five seeds)
  AI Coverage:                              14.28% (1,428 ambiguous cases routed)
  Total LLM Token Cost:                     ₹104.11
  Average LLM Latency:                      120.0ms (vs <0.1ms deterministic fast path)
@@ -78,7 +80,7 @@ We ran an identical-condition empirical A/B benchmark comparing **System A (Dete
 ### The Engineering Decision:
 * When given autonomous authority, the LLM suffered from **"Intervention Inflation"**—recommending high-friction notifications and support escalations on borderline cases where a standard delayed retry was economically optimal.
 * **The Scientific Verdict**: In accordance with empirical rigor, **we removed the LLM from the autonomous financial execution path.**
-* **Current Role of AI**: Contextual diagnosis only. The LLM serves strictly as an **Operator Decision Room Assistant** for human review on high-value transactions ($\ge ₹50,000$).
+* **Current Role of AI**: Contextual diagnosis only. The LLM serves strictly as an **Operator Decision Room Assistant** for human review on high-value transactions ($\ge ₹50,000$). The economic engine and deterministic SafetyKernel remain authoritative over action authorization.
 
 ---
 
@@ -130,9 +132,9 @@ We ran an identical-condition empirical A/B benchmark comparing **System A (Dete
 
 ## 6. Payment State Safety & Concurrency Races
 
-PayRecover AI directly handles real Razorpay distributed payment anomalies:
+PayRecover AI models and safely handles payment-state anomalies consistent with documented Razorpay webhook behavior:
 
-1. **The Capture Race**: If a customer re-attempts payment via UPI while a scheduled retry is in queue, `payment.captured` arrives $\to$ pushes cancellation to `CANCELLED_STALE` $\to$ scheduled worker pull-check intercepts execution $\to$ **Zero Duplicate Charges**.
+1. **The Capture Race**: If a customer re-attempts payment via UPI while a scheduled retry is in queue, `payment.captured` arrives $\to$ pushes cancellation to `CANCELLED_STALE` $\to$ scheduled worker pull-check intercepts execution $\to$ **0 duplicate recovery executions in tested race scenarios**.
 2. **Out-of-Order Webhooks**: If `payment.failed` arrives after `payment.captured` due to network reordering, the state machine recognizes `CAPTURED` as terminal and discards the event.
 3. **Webhook Replay Attacks**: Identical `x-razorpay-event-id` deliveries are deduplicated in memory and ignored.
 4. **Payment Downtime Sentinel**: Ingests `payment.downtime.started` webhooks and automatically applies an adaptive 1800s delay offset until `payment.downtime.resolved` restores normal policy.
@@ -170,12 +172,13 @@ PayRecover AI includes a high-density, zero-dependency operator interface served
 ### Prerequisites
 * Python 3.11+
 * Linux / macOS
+* Zero external database setup needed: Runs on an embedded in-memory SQLite engine (`sqlite+aiosqlite:///:memory:`) by default for instant evaluation, with native PostgreSQL support via the `DATABASE_URL` environment variable.
 
 ### Installation & Test Execution
 
 ```bash
-# 1. Clone Repository
-git clone https://github.com/nitinkumar400/pay-recover-ai.git
+# 1. Clone Public Repository
+git clone https://github.com/Nitin-mishra-dev/pay-recover-ai.git
 cd pay-recover-ai
 
 # 2. Setup Virtual Environment
