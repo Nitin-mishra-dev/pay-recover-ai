@@ -62,3 +62,8 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# External large datasets
+razorpay_chargeback_ai_kaggle_export/
+razorpay_dispute_ai_dataset_v1/
+*.csv
